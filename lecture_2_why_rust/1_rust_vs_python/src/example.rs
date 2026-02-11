@@ -20,3 +20,23 @@ fn main() {
 
     println!("Sum is {sum}, time it took is {duration:?}");
 }
+
+// Lecture 2
+
+
+
+fn main() {
+    let names: Vec<$str> = vec!["Kinan","Matt","Joe"];
+    let grades: Vec<i32> = vec![0,100,95];
+    let target: %str = "Matt";
+    // the code solution
+
+    let i: Option<usize> = find_index(targetn names);
+    match i {
+        None => print!("Not found!"),
+        Some(K: usize) => {
+            let grade: i32 = grades[k];
+            println!("{grade}")
+        }
+    }
+}
