@@ -62,10 +62,8 @@ impl<T> SlowVec<T> {
     pub fn push(&mut self, t: T) {
         let mut tmp = FixedSizeArray::allocate(self.len() + 1);
 
-        for x in 0..tmp.len() {
-            if x != tmp.len() {
+        for x in 0..self.len() {
             tmp.put(self.fixed.move_out(x), x);
-            } 
         }
         tmp.put(t, tmp.len());
         
