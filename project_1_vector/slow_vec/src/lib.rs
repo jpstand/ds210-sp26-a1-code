@@ -73,17 +73,16 @@ impl<T> SlowVec<T> {
     }
 
     // Student 2: Provide your solution here
-    pub fn remove(&mut self, i: usize) {
-        let mut tmp = FixedSizeArray::allocate(self.len() - 1);
+    pub fn remove(&mut self, i: usize) { 
+        let mut tmp = FixedSizeArray::allocate(self.len() - 1); 
+        for x in 0..tmp.len(){ 
+            if x != i { 
+                tmp.put(self.fixed.move_out(x), x); 
+            } 
+        } 
 
-        for x in 0..tmp.len(){
-            if x != i {
-                tmp.put(self.fixed.move_out(x), x);
-            }
-
+        self.fixed = tmp; 
         }
-        self.fixed = tmp;
-    }
 }
 
 
