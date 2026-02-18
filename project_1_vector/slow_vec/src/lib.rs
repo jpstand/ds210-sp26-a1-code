@@ -65,7 +65,7 @@ impl<T> SlowVec<T> {
         for x in 0..self.len() {
             tmp.put(self.fixed.move_out(x), x);
         }
-        tmp.put(t, tmp.len());
+        tmp.put(t, self.len());
         
         self.fixed = tmp;
     }
