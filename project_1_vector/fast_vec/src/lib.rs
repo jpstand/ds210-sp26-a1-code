@@ -64,7 +64,7 @@ impl<T> FastVec<T> {
        if i >= self.len {
             panic!("FastVec: get out of bounds");
         }
-
+ 
         unsafe {
             let pointer_i = self.ptr_to_data.add(i);
             return &*pointer_i;
@@ -73,11 +73,32 @@ impl<T> FastVec<T> {
 
     // Student 2 should implement this.
     pub fn push(&mut self, t: T) {
-        if self.len == self.capacity {
-            todo!("implement growing the vector by doubling the size!");
-        } else {
-            todo!("implement pushing t directly since the vector still has capacity!");
+        if self.len == self.capacity { // if filled
+            let size_of_vec = self.capacity * 2; // current size * 2
+            let newvec = MALLOC.malloc(size_of::<T>() * size_of_vec) as *mut T; // allocate for double the old vec
+            
+            for i in 0..self.len(){
+                unsafe{//copy from old 
+                    let oldt= self.ptr_to_data.add(i);
+                    let newt = newvec.add(i);
+                    std::ptr::write(newt, std::ptr::read(oldt ));
+        
+                }
+            }
+            // free the old pointer
+            MALLOC.free(self.ptr_to_data as *mut u8); 
+
+            //update pointer and capacity 
+            self.ptr_to_data = newvec;
+            self.capacity = size_of_vec;
+        } 
+
+        unsafe{
+            let next_element = self.ptr_to_data.add(self.len); // go the the end of the list 
+            std::ptr::write(next_element, t); //write to the end of the list
+            self.len += 1; // update len
         }
+    
     }
 
     // Student 1 should implement this.
