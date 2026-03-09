@@ -82,7 +82,23 @@ impl<T> FastVec<T> {
 
     // Student 1 should implement this.
     pub fn remove(&mut self, i: usize) {
-        todo!("implement remove");
+        if i >= self.len{
+            panic!("FastVec: remove out of bounds");
+        }
+        
+        unsafe {
+            ptr::read(self.ptr_to_data.add(i));
+            for j in i+1..self.len {
+                let current_pointer = self.ptr_to_data.add(j);
+                let cur_val = ptr::read(current_pointer);
+                let prev_pointer = self.ptr_to_data.add(j-1);
+                ptr::write(prev_pointer, cur_val);
+            }
+        }
+        self.len -= 1; // this one I am a little confused on. Looking at the error with the test to solve the 
+                       // inequality issue this works, but from the instructions I thought it said we don't have to resize
+                       // the vector? This passes the test though. Above logic just follows instructions from hw. maybe
+                       // resizing is not referring to length but to capacity? 
     }
 
     // This appears correct but with further testing, you will notice it has a bug!
