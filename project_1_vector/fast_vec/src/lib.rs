@@ -127,6 +127,12 @@ impl<T> FastVec<T> {
     // Hint: check out case 2 in memory.rs, which you can run using
     //       cargo run --bin memory
     pub fn clear(&mut self) {
+        unsafe {
+            for i in 0..self.len {
+                ptr::read(self.ptr_to_data.add(i));
+            }
+        } //if you look at memory the code is mad because the three pushed values are not freed. so before freeing the memory
+          // I tried "wiping" every value in the vector with a for loop and that seemed to work. 
         MALLOC.free(self.ptr_to_data as *mut u8);
         self.ptr_to_data = null_mut();
         self.len = 0;
