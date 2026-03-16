@@ -17,11 +17,8 @@ impl ChatbotV1 {
             .chat()
             .with_system_prompt("The assistant will act like a pirate");
 
-        // You need to add your code here
-        // You must find a way to add the given message to the chat_session!
-        // consider https://docs.rs/kalosm/0.4.0/kalosm/language/struct.Chat.html#method.add_message
-        // Hint: make sure you transform/extract the response message as a **String**.
-
-        return String::from("Hello, I am not a bot (yet)!");
+        let response_stream: String = chat_session.add_message(message).await.unwrap(); // sends the message to the llm and puts the responce in "response_stream"
+        println!("{response_stream}"); // print to terminal
+        return response_stream; // print in browser
     }
 }
