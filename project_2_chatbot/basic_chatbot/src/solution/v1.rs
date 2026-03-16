@@ -16,9 +16,12 @@ impl ChatbotV1 {
         let mut chat_session: Chat<Llama> = self.model
             .chat()
             .with_system_prompt("The assistant will act like a pirate");
-        println!("{message}"); 
-        let response_stream: String = chat_session.add_message(message).await.unwrap(); // sends the message to the llm and puts the responce in "response_stream"
-        println!("{response_stream}"); // print to terminal
-        return response_stream; // print in browser
+        println!("{message}");
+        let mut async_output = chat_session.add_message(message);
+        let stream = async_output.to_std_out().await.unwrap();
+        let output = async_output.await;
+
+
+        return output.unwrap();
     }
 }
