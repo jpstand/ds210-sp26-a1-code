@@ -39,14 +39,15 @@ impl ChatbotV3 {
         if self.session.contains_key(&username){ 
             // retreive chat history. 
             let chat_session  = self.session.get(&username).unwrap().session().unwrap().history();
-            let mut temp: Vec<String> = Vec::new();
+            let mut temp: Vec<String> = Vec::new(); // create a string of the content
             
             for i in chat_session{
                 
-                temp.push(i.content().to_string());
+                temp.push(i.content().to_string()); // pushing the history of the Vec
             }
-            temp.remove(0);
-            return temp;
+            temp.remove(0); // removed first index, first index caused misalignment when reopened.
+            println!("{:?}", temp);
+            return temp; // return the history
         
         
         // Extract the chat message history for the given username
