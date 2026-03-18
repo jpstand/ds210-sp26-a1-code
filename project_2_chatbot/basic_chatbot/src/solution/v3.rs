@@ -21,7 +21,7 @@ impl ChatbotV3 {
         
         // if username doesnt exist create a new session.
         if !self.session.contains_key(&username){ 
-            self.session.insert(username.clone(), self.model.chat().with_system_prompt(""));// The assistant will act like a pirate
+            self.session.insert(username.clone(), self.model.chat().with_system_prompt("The assistant will act like a pirate"));// The assistant will act like a pirate
         } 
         // retreive chat history. 
         let chat_session = self.session.get_mut(&username).unwrap(); 
@@ -37,24 +37,24 @@ impl ChatbotV3 {
 
     #[allow(dead_code)]
     pub fn get_history(&self, username: String) -> Vec<String> {
-        if !self.session.contains_key(&username){ 
-            self.session.insert(username.clone(), self.model.chat().with_system_prompt(""));// The assistant will act like a pirate
-        } 
-        // retreive chat history. 
-        let chat_session  = self.session.get(&username).unwrap().session().unwrap().history();
-        let mut temp: Vec<String> = Vec::new();
-        let kjshkds = chat_session[0].content();
-        println!("{}", kjshkds);
-        for i in chat_session{
-            temp.push(*i.content());
-        }
-        return temp;
+        if self.session.contains_key(&username){ 
+            // retreive chat history. 
+            let chat_session  = self.session.get(&username).unwrap().session().unwrap().history();
+            let mut temp: Vec<String> = Vec::new();
+            
+            for i in chat_session{
+                
+                temp.push(i.content().to_string());
+            }
+            temp.remove(0);
+            return temp;
         
         
         // Extract the chat message history for the given username
         // Hint: think of how you can retrieve the Chat object for that user, when you retrieve it
         // you may want to use https://docs.rs/kalosm/0.4.0/kalosm/language/struct.Chat.html#method.session
         // to then retrieve the history!
+        }
         return Vec::new();
     }
 }
