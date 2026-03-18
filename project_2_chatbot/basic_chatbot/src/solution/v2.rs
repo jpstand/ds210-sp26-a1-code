@@ -1,5 +1,3 @@
-use std::io::SeekFrom;
-
 use kalosm::language::*;
 
 #[allow(dead_code)]
@@ -27,9 +25,9 @@ impl ChatbotV2 {
         }
             
         let mut chat_session = self.chat.clone().unwrap(); // if there is a chat history clone it 
-        println!("User: {message}"); // print what the user said
+        
         let mut async_output = chat_session.add_message(message.clone()); // send message to the LLM
-        print!("LLM: "); 
+       
         async_output.to_std_out().await.unwrap(); // print output in the terminal
         let output = async_output.await.unwrap(); // 
         
