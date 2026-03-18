@@ -4,15 +4,15 @@ use std::collections::HashMap;
 #[allow(dead_code)]
 pub struct ChatbotV3 {
     model: Llama,
-    session: HashMap<String, Chat<Llama>>,
+    session: HashMap<String, Chat<Llama>>, // containing username and chat history 
 }
 
 impl ChatbotV3 {
     #[allow(dead_code)]
     pub fn new(model: Llama) -> ChatbotV3 {
         return ChatbotV3 {
-           model: model,
-           session: HashMap::new(),
+            model: model,
+            session: HashMap::new(), // creates history 
         };
     }
 
@@ -36,10 +36,24 @@ impl ChatbotV3 {
 
     #[allow(dead_code)]
     pub fn get_history(&self, username: String) -> Vec<String> {
+        if self.session.contains_key(&username){ 
+            // retreive chat history. 
+            let chat_session  = self.session.get(&username).unwrap().session().unwrap().history();
+            let mut temp: Vec<String> = Vec::new();
+            
+            for i in chat_session{
+                
+                temp.push(i.content().to_string());
+            }
+            temp.remove(0);
+            return temp;
+        
+        
         // Extract the chat message history for the given username
         // Hint: think of how you can retrieve the Chat object for that user, when you retrieve it
         // you may want to use https://docs.rs/kalosm/0.4.0/kalosm/language/struct.Chat.html#method.session
         // to then retrieve the history!
+        }
         return Vec::new();
     }
 }

@@ -18,7 +18,7 @@ impl ChatbotV1 {
             .with_system_prompt("The assistant will act like a pirate");
         println!("{message}");
         let mut async_output = chat_session.add_message(message);
-        let stream = async_output.to_std_out().await.unwrap();
+        let _stream = async_output.to_std_out().await.unwrap();
         let output = async_output.await;
 
 
