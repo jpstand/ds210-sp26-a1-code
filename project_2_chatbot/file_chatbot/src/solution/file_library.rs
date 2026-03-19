@@ -22,14 +22,11 @@ pub fn load_chat_session_from_file(filename: &str) -> Option<LlamaChatSession> {
     
     match chat_history{ // check if there is a file retreived.
         Ok(the_history) =>{ // if there is something 
+            println!("Loading chat session from file {filename}");
             return Some(LlamaChatSession::from_bytes(&the_history).unwrap()); // convert the bytes into a LlamaChatSession
         },
         Err(..)=>{
-            println!("ERROR: UNABLE TO FIND USER! :O "); // Print error if there is a user but no file.  
+            panic!("ERROR: UNABLE TO FIND USER! :O "); // Print error if there is a user but no file.  
         },
     }
-    
-    // look at fs::read(...)    
-    // also look at LlamaChatSession::from_bytes(...)
-    unimplemented!("Loading chat session from file {filename}");
 }
