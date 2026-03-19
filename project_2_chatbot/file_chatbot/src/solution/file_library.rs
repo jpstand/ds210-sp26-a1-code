@@ -18,7 +18,18 @@ pub fn save_chat_session_to_file(filename: &str, session: &LlamaChatSession) {
 
 // Implement this
 pub fn load_chat_session_from_file(filename: &str) -> Option<LlamaChatSession> {
-    // look at fs::read(...)
+    let chat_history = fs::read(filename); // read the file and put it in a vector of bytes
+    
+    match chat_history{ // check if there is a file retreived.
+        Ok(the_history) =>{ // if there is something 
+            return Some(LlamaChatSession::from_bytes(&the_history).unwrap()); // convert the bytes into a LlamaChatSession
+        },
+        Err(..)=>{
+            println!("ERROR: UNABLE TO FIND USER! :O "); // Print error if there is a user but no file.  
+        },
+    }
+    
+    // look at fs::read(...)    
     // also look at LlamaChatSession::from_bytes(...)
     unimplemented!("Loading chat session from file {filename}");
 }
