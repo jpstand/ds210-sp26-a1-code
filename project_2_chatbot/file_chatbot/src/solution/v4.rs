@@ -25,9 +25,8 @@ impl ChatbotV4 {
                 let mut async_output = chat_session.add_message(message); // send message to the LLM
                 let _stream = async_output.to_std_out().await.unwrap(); // print output in the terminal
                 let output = async_output.await;
-                let filename = &username;
                 let session_for_writing = chat_session.session().unwrap();
-                file_library::save_chat_session_to_file(filename, &*session_for_writing); // we write a file for this most recent convo (or overwrite if one already exists)
+                file_library::save_chat_session_to_file(filename, &session_for_writing); // we write a file for this most recent convo (or overwrite if one already exists)
                 return output.unwrap();
             },
             None => { // if it does not exist then we make a new session
@@ -38,9 +37,8 @@ impl ChatbotV4 {
                 let mut async_output = chat_session.add_message(message); // send message to the LLM
                 let _stream = async_output.to_std_out().await.unwrap(); // print output in the terminal
                 let output = async_output.await;
-                let filename = &username;
                 let session_for_writing = chat_session.session().unwrap();
-                file_library::save_chat_session_to_file(filename, &*session_for_writing); //we write a file for this most 
+                file_library::save_chat_session_to_file(filename, &session_for_writing); //we write a file for this most 
                 return output.unwrap();
             },
         }
