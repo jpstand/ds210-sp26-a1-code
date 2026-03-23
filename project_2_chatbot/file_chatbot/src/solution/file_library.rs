@@ -28,7 +28,8 @@ pub fn load_chat_session_from_file(filename: &str) -> Option<LlamaChatSession> {
             return Some(LlamaChatSession::from_bytes(&the_history).unwrap()); // convert the bytes into a LlamaChatSession
         },
         Err(..)=>{
-            panic!("ERROR: UNABLE TO FIND USER! :O "); // Print error if there is a user but no file.  
+            println!("No history found");
+            return None;  
         },
     }
 }
