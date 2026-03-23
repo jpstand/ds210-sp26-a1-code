@@ -15,32 +15,32 @@ impl ChatbotV4 {
     pub async fn chat_with_user(&mut self, username: String, message: String) -> String {
         let filename = &format!("{}.txt", username);
         let loaded_session = file_library::load_chat_session_from_file(filename);
-        match loaded_session {
+        match loaded_session { // checks if loaded session exists
             Some(existing_session) => { 
                 let mut chat_session = self.model
                 .chat()
-                .with_system_prompt("The assistant will act like a pirate")
-                .with_session(existing_session);
+                .with_system_prompt("respond with 5 words max") //"The assistant will act like a pirate"
+                .with_session(existing_session); //if it does exist then we use existing session
                 println!("{message}");
-                let mut async_output = chat_session.add_message(message);
-                let _stream = async_output.to_std_out().await.unwrap();
+                let mut async_output = chat_session.add_message(message); // send message to the LLM
+                let _stream = async_output.to_std_out().await.unwrap(); // print output in the terminal
                 let output = async_output.await;
                 let filename = &username;
                 let session_for_writing = chat_session.session().unwrap();
-                file_library::save_chat_session_to_file(filename, &*session_for_writing);
+                file_library::save_chat_session_to_file(filename, &*session_for_writing); // we write a file for this most recent convo (or overwrite if one already exists)
                 return output.unwrap();
             },
-            None => {
+            None => { // if it does not exist then we make a new session
                 let mut chat_session: Chat<Llama> = self.model
                 .chat()
-                .with_system_prompt("The assistant will act like a pirate");
+                .with_system_prompt("respond with 5 words max"); //"The assistant will act like a pirate"
                 println!("{message}");
-                let mut async_output = chat_session.add_message(message);
-                let _stream = async_output.to_std_out().await.unwrap();
+                let mut async_output = chat_session.add_message(message); // send message to the LLM
+                let _stream = async_output.to_std_out().await.unwrap(); // print output in the terminal
                 let output = async_output.await;
                 let filename = &username;
                 let session_for_writing = chat_session.session().unwrap();
-                file_library::save_chat_session_to_file(filename, &*session_for_writing);
+                file_library::save_chat_session_to_file(filename, &*session_for_writing); //we write a file for this most 
                 return output.unwrap();
             },
         }
