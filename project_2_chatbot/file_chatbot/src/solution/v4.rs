@@ -25,6 +25,9 @@ impl ChatbotV4 {
                 let mut async_output = chat_session.add_message(message);
                 let _stream = async_output.to_std_out().await.unwrap();
                 let output = async_output.await;
+                let filename = &username;
+                let session_for_writing = chat_session.session().unwrap();
+                file_library::save_chat_session_to_file(filename, &*session_for_writing);
                 return output.unwrap();
             },
             None => {
@@ -35,6 +38,9 @@ impl ChatbotV4 {
                 let mut async_output = chat_session.add_message(message);
                 let _stream = async_output.to_std_out().await.unwrap();
                 let output = async_output.await;
+                let filename = &username;
+                let session_for_writing = chat_session.session().unwrap();
+                file_library::save_chat_session_to_file(filename, &*session_for_writing);
                 return output.unwrap();
             },
         }
