@@ -19,7 +19,7 @@ impl ChatbotV4 {
             Some(existing_session) => { 
                 let mut chat_session = self.model
                 .chat()
-                .with_system_prompt("respond with 5 words max") //"The assistant will act like a pirate"
+                .with_system_prompt("The assistant will act like a pirate") //"The assistant will act like a pirate"
                 .with_session(existing_session); //if it does exist then we use existing session
                 println!("{message}");
                 let mut async_output = chat_session.add_message(message); // send message to the LLM
@@ -32,7 +32,7 @@ impl ChatbotV4 {
             None => { // if it does not exist then we make a new session
                 let mut chat_session: Chat<Llama> = self.model
                 .chat()
-                .with_system_prompt("respond with 5 words max"); //"The assistant will act like a pirate"
+                .with_system_prompt("The assistant will act like a pirate"); //"The assistant will act like a pirate"
                 println!("{message}");
                 let mut async_output = chat_session.add_message(message); // send message to the LLM
                 let _stream = async_output.to_std_out().await.unwrap(); // print output in the terminal
