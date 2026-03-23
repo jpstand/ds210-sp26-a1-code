@@ -13,6 +13,8 @@ use std::fs;
 // Implement this
 pub fn save_chat_session_to_file(filename: &str, session: &LlamaChatSession) {
     // look at fs::write(...)
+    std::fs::write(filename, session.to_bytes().unwrap()).unwrap();
+
     unimplemented!("Saving chat session to file {filename}");
 }
 
