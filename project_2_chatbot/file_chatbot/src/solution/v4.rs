@@ -54,8 +54,14 @@ impl ChatbotV4 {
                 return Vec::new();
             },
             Some(session) => {
-                // TODO: what should happen here?
-                return Vec::new();
+            let history = session.history();
+            let mut temp = Vec::new();
+            for i in history{
+                temp.push(i.content().to_string()); // pushing the history of the Vec
+            }
+            temp.remove(0); // removed first index, first index caused misalignment when reopened.             
+            println!("{:?}", temp);
+            return temp; // return the history
             }
         }
     }
