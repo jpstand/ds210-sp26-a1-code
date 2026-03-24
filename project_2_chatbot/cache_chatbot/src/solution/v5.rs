@@ -30,20 +30,19 @@ impl ChatbotV5 {
                 match file { // checks if the file exists
                     None => { // if it does not exist then we make a new file 
                         let mut new_session = chat_session.with_system_prompt("The assistant will act like a pirate"); //"The assistant will act like a pirate"
-                        println!("{username}: {message}");
-                        let mut async_output = new_session.add_message(message); // send message to the LLM
+                        let mut async_output = new_session.add_message(message.clone()); // send message to the LLM
+                        println!("{username}: {message}"); // print user message to terminal
                         async_output.to_std_out().await.unwrap(); // print output in the terminal
                         let output = async_output.await.unwrap();
                         let session_for_writing = new_session.session().unwrap();
-                        file_library::save_chat_session_to_file(filename, &session_for_writing); // we write a file
+                        file_library::save_chat_session_to_file(filename, &session_for_writing); // we write a file  
                         self.cache.insert_chat(username, self.model.chat());// cache the chat session
-                        
                         return output;
                     },
                     Some(existing_session) => { 
                         chat_session = chat_session.with_session(existing_session); //if it does exist then we use existing session
-                        println!("{username}: {message}");// print message from user
-                        let mut async_output = chat_session.add_message(message); // send message to the LLM
+                        let mut async_output = chat_session.add_message(message.clone()); // send message to the LLM
+                        println!("{username}: {message}"); // print user message to terminal
                         async_output.to_std_out().await.unwrap(); // print output in the terminal
                         let output = async_output.await.unwrap();
                         let session_for_writing = chat_session.session().unwrap();
