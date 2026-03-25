@@ -36,7 +36,8 @@ impl ChatbotV5 {
                         let output = async_output.await.unwrap();
                         let session_for_writing = new_session.session().unwrap();
                         file_library::save_chat_session_to_file(filename, &session_for_writing); // we write a file  
-                        self.cache.insert_chat(username, self.model.chat());// cache the chat session
+                        drop(session_for_writing); // free up new_session to be used again
+                        self.cache.insert_chat(username,  new_session);// cache the chat session
                         return output;
                     },
                     Some(existing_session) => { 
@@ -47,7 +48,8 @@ impl ChatbotV5 {
                         let output = async_output.await.unwrap();
                         let session_for_writing = chat_session.session().unwrap();
                         file_library::save_chat_session_to_file(filename, &session_for_writing); // we write a file for this most recent convo (or overwrite if one already exists)
-                        self.cache.insert_chat(username, self.model.chat());// cache the chat session
+                        drop(session_for_writing);// free up chat_session to be used again
+                        self.cache.insert_chat(username, chat_session);// cache the chat session
                         return output;
                     },
                 }
