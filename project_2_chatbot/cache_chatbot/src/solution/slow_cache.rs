@@ -31,7 +31,8 @@ impl<V> Cache<V> {
 
     // Helper functions.
     fn remove_least_recently_used(&mut self) {
-        // TODO: your code goes here.
+        let remove_this = self.usage_history.remove(0);
+        self.hashmap.remove(&remove_this);
         // println!("Removing least recently used");
     }
     fn mark_as_most_recently_used(&mut self, username: String) {
