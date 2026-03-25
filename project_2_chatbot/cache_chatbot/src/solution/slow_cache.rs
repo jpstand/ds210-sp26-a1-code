@@ -1,5 +1,4 @@
 use std::{collections::HashMap, fmt::Debug};
-
 pub struct Cache<V> {
     max_size: usize,
     hashmap: HashMap<String, V>,
@@ -36,8 +35,14 @@ impl<V> Cache<V> {
         // println!("Removing least recently used");
     }
     fn mark_as_most_recently_used(&mut self, username: String) {
+        // if there exist a cached history in the usage_history, remove it
+        if let Some(index) = self.usage_history.iter().position(|x| x == &username){ // googled this part. 
+            self.usage_history.remove(index);
+        }
+        self.usage_history.push(username.clone()); // treat it like a queue and push 
+        
         // TODO: your code goes here.
-        // println!("Marking {username} as most recently used");
+        println!("Marking {username} as most recently used");
     }
 
     // Reading from the cache:
