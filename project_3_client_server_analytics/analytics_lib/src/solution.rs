@@ -5,9 +5,9 @@ use crate::query::{Aggregation, Condition, Query};
 pub fn filter_dataset(dataset: &Dataset, filter: &Condition) -> Dataset { 
     //we are passing in by ref, so I'm going to make a new dataset while leaving the old one untouched
     let mut filtered_dataset =  Dataset::new(dataset.columns().clone()); //we make an empty dataset with the old datasets columns to be returned after filtering           
-    for row in dataset.iter() { //we iterate over each row to check if we the row matches the conditions of interest
-        let check = filter.check_filter_condition(row, dataset); //we use the helper function I added to query to return true or false if a condition is true
-        if check == true { //if the condition is true for this row, 
+    for row in dataset.iter() { //we iterate over each row to check if we the row matches the conditions of interest 
+        if filter.check_filter_condition(row, dataset) == true { //we use the helper function I added to query to return true or false if a condition is true,
+                                                                 //and if the condition is true for this row, 
             filtered_dataset.add_row(row.clone()); //we add it to the empty dataset, which is now the filtered dataset
         }
     }
