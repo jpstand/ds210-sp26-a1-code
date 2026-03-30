@@ -40,9 +40,6 @@ pub fn filter_dataset(dataset: &Dataset, filter: &Condition) -> Dataset {
     return filtered_dataset;
 }
 
-    //looks at the rows in the given dataset, checks whether they meet the filter condition, and return a new Dataset that only contains matching rows.
-
-
 pub fn group_by_dataset(dataset: Dataset, group_by_column: &String) -> HashMap<Value, Dataset> {
     todo!("Implement this!");
 }
