@@ -63,7 +63,7 @@ pub fn aggregate_dataset(dataset: HashMap<Value, Dataset>, aggregation: &Aggrega
     for (v,ds) in dataset.iter(){// do the following per dataset
             
         match aggregation{
-            Aggregation::Count(s)=>{ 
+            Aggregation::Count(_s)=>{ 
                 let ret_val = Value::Integer(ds.len() as i32); //converts a into a Value struct.
                 return_hash.insert(v.clone(), ret_val); //inserts into hashmap
                 
