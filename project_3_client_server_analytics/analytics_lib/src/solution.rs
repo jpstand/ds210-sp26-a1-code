@@ -15,7 +15,20 @@ pub fn filter_dataset(dataset: &Dataset, filter: &Condition) -> Dataset {
 }
 
 pub fn group_by_dataset(dataset: Dataset, group_by_column: &String) -> HashMap<Value, Dataset> {
-    todo!("Implement this!");
+    let mut grouped_data: HashMap<Value, Dataset> = HashMap::new(); //make the empty hashmap to have data/values added to
+    for row in dataset.iter() {
+        match grouped_data.get_mut(row.get_value(dataset.column_index(group_by_column))) { //if the hashmap already has this value
+            Some(dataset) => {
+                dataset.add_row(row.clone()); //clone the row and add it to the hashmap
+            },
+            None => { //if it doesn't contain this value yet
+                let mut temp_dataset= Dataset::new(dataset.columns().clone()); //make a new dataset to be added to the hashmap
+                temp_dataset.add_row(row.clone()); //add the row to the empty dataset
+                grouped_data.insert(row.get_value(dataset.column_index(group_by_column)).clone(), temp_dataset); //add the current value and row to the hashmap
+            }
+        }
+    }
+    return grouped_data;
 }
 
 pub fn aggregate_dataset(dataset: HashMap<Value, Dataset>, aggregation: &Aggregation) -> HashMap<Value, Value> {
