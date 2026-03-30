@@ -1,4 +1,6 @@
 use crate::dataset::Value;
+use crate::dataset::Row;
+use crate::dataset::Dataset;
 
 pub enum Condition {
     Equal(String, Value),
@@ -7,6 +9,42 @@ pub enum Condition {
     Or(Box<Condition>, Box<Condition>),
 }
 
+impl Condition {
+    pub fn check_filter_condition(&self, row: &Row, dataset: &Dataset) -> bool { //this function serves to check if a row matches the condition and returns a true/false val
+        match self {
+            Condition::Equal(column, value) => {
+                if row.get_value(dataset.column_index(column)) == value {
+                    return true; // if the condition is equal, and the value of a column in a row of interest from a dataset matches
+                                 // the condition's column and value, then return true
+                } 
+                return false;
+            },
+            Condition::Not(condition) => {
+                if condition.check_filter_condition(row, dataset) == false {
+                    return true;    // if the inner condition is true, return false, and if the inner condition is false, return true
+                } 
+                return false;
+            },
+            Condition::And(condition1, condition2) => {
+                if condition1.check_filter_condition(row, dataset) == true { //check if condition1 is true
+                    if condition2.check_filter_condition(row, dataset) == true {//if it is, check condition 2
+                        return true; //and if condition 2 is true, return true
+                    }
+                }
+                return false;
+            },
+            Condition::Or(condition1,condition2) => {
+                if condition1.check_filter_condition(row, dataset) == true { //if condition 1 is true return true
+                    return true;
+                }
+                if condition2.check_filter_condition(row, dataset) == true { //if condition 2 is true return true
+                    return true;
+                }
+                return false;
+            },
+        }
+    }
+}
 pub enum Aggregation {
     Count(String),
     Sum(String),
