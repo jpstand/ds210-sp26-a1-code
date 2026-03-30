@@ -48,7 +48,49 @@ pub fn group_by_dataset(dataset: Dataset, group_by_column: &String) -> HashMap<V
 }
 
 pub fn aggregate_dataset(dataset: HashMap<Value, Dataset>, aggregation: &Aggregation) -> HashMap<Value, Value> {
-    todo!("Implement this!");
+    let mut return_hash: HashMap<Value, Value> = HashMap::with_capacity(dataset.len());
+    
+    for (v,ds) in dataset.iter(){// do the following per dataset
+            
+        match aggregation{
+            Aggregation::Count(s)=>{ 
+                let ret_val = Value::Integer(ds.len() as i32); //converts a into a Value struct.
+                return_hash.insert(v.clone(), ret_val); //inserts into hashmap
+                
+            },
+            Aggregation::Sum(s)=>{
+                 
+                let col_index = ds.column_index(s); //finding the column index of the column that matters
+                let mut sum = 0;
+                for row in ds.iter(){ // go through rows
+                    // googled how to use "if let", no AI used
+                    if let Value::Integer(int) = row.get_value(col_index){ //for each row go to specific column and get the value, if it is of type Value::Integer()
+                        sum += int;
+                    }
+                }
+                    // go the column and add the elements together 
+                let ret_val = Value::Integer(sum as i32); //converts a into a Value struct.
+                return_hash.insert(v.clone(), ret_val);
+            },
+            Aggregation::Average(s)=>{
+                let col_index = ds.column_index(s); //finding the column index of the column that matters
+                let mut sum = 0;
+
+                for row in ds.iter(){ // gets sum 
+                    if let Value::Integer(int) = row.get_value(col_index){ //for each row go to specific column and get the value, if it is of type Value::Integer()
+                        sum += int;
+                    }
+                }
+            
+                let count = ds.len() as i32; // num of rows
+                
+                let ret_val = Value::Integer(sum / count); //converts a into a Value struct.
+                return_hash.insert(v.clone(), ret_val);
+                
+            }
+        }
+    }
+    return return_hash;
 }
 
 pub fn compute_query_on_dataset(dataset: &Dataset, query: &Query) -> Dataset {
