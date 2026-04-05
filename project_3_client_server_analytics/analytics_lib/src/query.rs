@@ -1,3 +1,6 @@
+use serde::Deserialize;
+use serde::Serialize;
+
 use crate::dataset::Value;
 use crate::dataset::Row;
 use crate::dataset::Dataset;
