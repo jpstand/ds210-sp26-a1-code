@@ -3,11 +3,10 @@ use crate::dataset::{ColumnType, Dataset, Value, Row};
 use crate::query::{Aggregation, Condition, Query};
 
 pub fn filter_dataset(dataset: &Dataset, filter: &Condition) -> Dataset {
-    let iterator = dataset.iter(); //using iter rather than into_iter becuase we only need read permissions.
     let columns = dataset.columns(); // copy the structure of the OG dataset.
     let mut filtered_dataset = Dataset::new(columns.clone()); // data set that will be filled and returned
     
-    for row in iterator{ // check each row.
+    for row in dataset.iter(){ // check each row.
        // because Condition has so many possible filters we must match each case. 
        // recursive function bec of the way it is set up in dataset 
         fn check(r: &Row, f: &Condition, ds: &Dataset) -> bool{ //helper function
@@ -63,7 +62,7 @@ pub fn aggregate_dataset(dataset: HashMap<Value, Dataset>, aggregation: &Aggrega
     for (v,ds) in dataset.iter(){// do the following per dataset
             
         match aggregation{
-            Aggregation::Count(s)=>{ 
+            Aggregation::Count(_s)=>{ 
                 let ret_val = Value::Integer(ds.len() as i32); //converts a into a Value struct.
                 return_hash.insert(v.clone(), ret_val); //inserts into hashmap
                 

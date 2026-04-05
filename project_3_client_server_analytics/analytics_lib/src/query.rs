@@ -4,8 +4,10 @@ use serde::Serialize;
 use crate::dataset::Value;
 use crate::dataset::Row;
 use crate::dataset::Dataset;
+use serde::{Deserialize, Serialize};
+use std::fmt::{Debug, Display};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Condition {
     Equal(String, Value),
     Not(Box<Condition>),
@@ -49,7 +51,8 @@ impl Condition {
         }
     }
 }
-#[derive(Debug, Serialize, Deserialize)]
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Aggregation {
     Count(String),
     Sum(String),
@@ -65,7 +68,7 @@ impl Aggregation {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Query {
     filter: Condition,
     group_by: String,

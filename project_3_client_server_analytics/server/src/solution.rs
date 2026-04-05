@@ -1,3 +1,4 @@
+use analytics_lib::{dataset::Dataset, query::Query};
 use analytics_lib::{dataset::Dataset, query::Query, solution::compute_query_on_dataset};
 
 pub fn hello() -> String {
