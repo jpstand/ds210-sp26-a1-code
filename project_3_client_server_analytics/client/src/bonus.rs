@@ -5,10 +5,20 @@ use std::io::BufRead;
 
 use analytics_lib::query::Query;
 use client::{start_client, solution};
+use tokio::io::split;
 
 // Your solution goes here.
 fn parse_query_from_string(input: String) -> Query {
-    todo!("Implement this");
+    let split_input = input.split_whitespace();
+    let aggregation_wprds = vec!["count", "sum", "average"];
+    let condition_words = vec!["equal", "not", "or", "and"];
+     
+    
+    for str in split_input{
+        str =
+
+    }
+
 }
 
 // Each defined rpc generates an async fn that serves the RPC
