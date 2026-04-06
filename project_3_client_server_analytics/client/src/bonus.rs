@@ -9,7 +9,7 @@ use tokio::io::split;
 
 // Your solution goes here.
 fn parse_query_from_string(input: String) -> Query {
-    let split_input = input.split_whitespace();
+    let split_input = input.to_lowercase().split_whitespace();
     let aggregation_wprds = vec!["count", "sum", "average"];
     let condition_words = vec!["equal", "not", "or", "and"];
      
