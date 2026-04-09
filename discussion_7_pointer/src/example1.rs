@@ -11,9 +11,10 @@ fn mid_by_pointer(v: *const Vec<i32>) -> i32 {
         let length = (*v).len(); // equivalent to (&*v).len()
 
         // But this is NOT allowed:
-        return (*v)[length / 2];
+        // return (*v)[length / 2];
         // because (*v)[length / 2] is actually (*v).index(length / 2)
         // and index() is a "trait" which Rust will not auto-deref for you
+        return 0;
     }
 }
 
