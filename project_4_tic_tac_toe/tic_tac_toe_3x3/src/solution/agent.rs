@@ -41,8 +41,8 @@ impl Agent for SolutionAgent {
         for m in moves.clone(){// for each move
 
             board.apply_move(m, player);
-            let x_result = SolutionAgent::solve(board, player.flip(), _time_limit);
-            let score = x_result.0;
+            let result = SolutionAgent::solve(board, player.flip(), _time_limit);
+            let score = result.0;
             board.undo_move(m, player);
 
             if matches!(player, Player::X) {
@@ -64,5 +64,4 @@ impl Agent for SolutionAgent {
     // If you want to make a recursive call to this solution, use
     // `SolutionAgent::solve(...)`
     //unimplemented!("Not yet implemented");
-    
 }
