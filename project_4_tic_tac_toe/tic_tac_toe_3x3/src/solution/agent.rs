@@ -22,7 +22,7 @@ impl Agent for SolutionAgent {
         let moves = board.moves(); // available moves
         let score = board.score();
         
-        if board.game_over() {
+        if board.game_over() {// base case
             return (score,0,0);
         }
          
