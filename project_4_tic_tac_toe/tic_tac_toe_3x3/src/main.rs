@@ -6,6 +6,7 @@ use tic_tac_toe_stencil::player::Player;
 use crate::args::{Agents, Args};
 use tic_tac_toe_3x3::layout::Layout3x3;
 use tic_tac_toe_3x3::solution::agent::SolutionAgent;
+use tic_tac_toe_3x3::solution2::agent::SolutionAgent2; //adding in the hard coded version
 
 mod args;
 
@@ -51,5 +52,18 @@ fn main() {
         (Agents::Test, Agents::Random) => game_loop::<_, TestAgent, RandomAgent>(layout, TIME_LIMIT, false),
         (Agents::Test, Agents::Solution) => game_loop::<_, TestAgent, SolutionAgent>(layout, TIME_LIMIT, false),
         (Agents::Test, Agents::Test) => game_loop::<_, TestAgent, TestAgent>(layout, TIME_LIMIT, false),
+        // Solution2 vs the world. I copy pasted the solution vs the wolrd and just added solution2 in place
+        (Agents::Solution2, Agents::First) => game_loop::<_, SolutionAgent2, FirstMoveAgent>(layout, TIME_LIMIT, false),
+        (Agents::Solution2, Agents::Manual) => game_loop::<_, SolutionAgent2, ManualAgent>(layout, TIME_LIMIT, false),
+        (Agents::Solution2, Agents::Random) => game_loop::<_, SolutionAgent2, RandomAgent>(layout, TIME_LIMIT, false),
+        (Agents::Solution2, Agents::Solution) => game_loop::<_, SolutionAgent2, SolutionAgent>(layout, TIME_LIMIT, false),
+        (Agents::Solution2, Agents::Solution2) => game_loop::<_, SolutionAgent2, SolutionAgent2>(layout, TIME_LIMIT, false),
+        (Agents::Solution2, Agents::Test) => game_loop::<_, SolutionAgent2, TestAgent>(layout, TIME_LIMIT, false),
+        // Also add Solution2 as the second agent for existing first agents. This is me jsut going back and adding solution2 as the against player
+        (Agents::First, Agents::Solution2) => game_loop::<_, FirstMoveAgent, SolutionAgent2>(layout, TIME_LIMIT, false),
+        (Agents::Manual, Agents::Solution2) => game_loop::<_, ManualAgent, SolutionAgent2>(layout, TIME_LIMIT, false),
+        (Agents::Random, Agents::Solution2) => game_loop::<_, RandomAgent, SolutionAgent2>(layout, TIME_LIMIT, false),
+        (Agents::Solution, Agents::Solution2) => game_loop::<_, SolutionAgent, SolutionAgent2>(layout, TIME_LIMIT, false),
+        (Agents::Test, Agents::Solution2) => game_loop::<_, TestAgent, SolutionAgent2>(layout, TIME_LIMIT, false),
     };
 }
