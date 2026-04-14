@@ -151,6 +151,19 @@ impl Agent for SolutionAgent2 {
             }
             board.undo_move((r, c), player.flip());
         }
+        // if we don't hit above logic, pick a corner that's available. This is better than just returning 0, 0.
+        for &(r, c) in &corners {
+            if moves.contains(&(r, c)) {
+                return (score, r, c);
+            }
+        }
+
+        // same case but if no corner then just do an edge. We prioritize corners over edges because a corner gives you options of block things from up to 3 directions
+        for &(r, c) in &edges {
+            if moves.contains(&(r, c)) {
+                return (score, r, c);
+            }
+        }
 
         return (score, 0, 0); //shouldn't get to this point but it's here
     }
