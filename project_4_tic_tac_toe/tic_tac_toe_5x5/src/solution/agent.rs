@@ -124,76 +124,54 @@ fn my_score_evaluate(x: &Cell, y: &Cell, z: &Cell, sabatoge: bool) -> i32 {
     if matches!(x, Cell::Wall) || matches!(y, Cell::Wall) || matches!(z, Cell::Wall) {
         return 0;
     }
-    let mut total = 0;
     // we can make it smarter by adding more cases
     if !sabatoge {
-        total = match (x, y, z) {
-            // Walls: Early exit
-            (Cell::Wall, _, _) | (_, Cell::Wall, _) | (_, _, Cell::Wall) => 0,
-
+        return match (x, y, z) {
             // 3 in a row
-            (Cell::X, Cell::X, Cell::X) => 100,
-            (Cell::O, Cell::O, Cell::O) => -100,
-
+            (Cell::X, Cell::X, Cell::X) => 1000,
+            (Cell::O, Cell::O, Cell::O) => -1000,
             // 2 in a row for X
             (Cell::X, Cell::X, Cell::Empty)
             | (Cell::X, Cell::Empty, Cell::X)
             | (Cell::Empty, Cell::X, Cell::X) => 20,
-
             // 2 in a row for O
             (Cell::O, Cell::O, Cell::Empty)
             | (Cell::O, Cell::Empty, Cell::O)
             | (Cell::Empty, Cell::O, Cell::O) => -20,
-
             //blocking O
             (Cell::X, Cell::O, Cell::O)
             | (Cell::O, Cell::X, Cell::O)
-            | (Cell::O, Cell::O, Cell::X) => 10,
-
+            | (Cell::O, Cell::O, Cell::X) => 400,
             //blocking X
             (Cell::O, Cell::X, Cell::X)
             | (Cell::X, Cell::O, Cell::X)
-            | (Cell::X, Cell::X, Cell::O) => -10,
-
+            | (Cell::X, Cell::X, Cell::O) => -400,
             _ => 0, // return 0 for everyother case.
         }
-    }else{
-        if !matches!(x, Cell::Wall) && !matches!(y, Cell::Wall) && !matches!(z, Cell::Wall) {
-            total = match (x, y, z) {
-                // Walls: Early exit
-                (Cell::Wall, _, _) | (_, Cell::Wall, _) | (_, _, Cell::Wall) => 0,
-
-                // 3 in a row
-                (Cell::X, Cell::X, Cell::X) => 90,
-                (Cell::O, Cell::O, Cell::O) => -90,
-
-                // 2 in a row for X
-                (Cell::X, Cell::X, Cell::Empty)
-                | (Cell::X, Cell::Empty, Cell::X)
-                | (Cell::Empty, Cell::X, Cell::X) => 5,
-
-                // 2 in a row for O
-                (Cell::O, Cell::O, Cell::Empty)
-                | (Cell::O, Cell::Empty, Cell::O)
-                | (Cell::Empty, Cell::O, Cell::O) => -5,
-
-                //blocking O
-                (Cell::X, Cell::O, Cell::O)
-                | (Cell::O, Cell::X, Cell::O)
-                | (Cell::O, Cell::O, Cell::X) => 40,
-
-                //blocking X
-                (Cell::O, Cell::X, Cell::X)
-                | (Cell::X, Cell::O, Cell::X)
-                | (Cell::X, Cell::X, Cell::O) => -40,
-
-                _ => 0, // return 0 for everyother case.
-            }
+    } else {
+        return match (x, y, z) {
+            // 3 in a row
+            (Cell::X, Cell::X, Cell::X) => 1000,
+            (Cell::O, Cell::O, Cell::O) => -1000,
+            // 2 in a row for X
+            (Cell::X, Cell::X, Cell::Empty)
+            | (Cell::X, Cell::Empty, Cell::X)
+            | (Cell::Empty, Cell::X, Cell::X) => 5,
+            // 2 in a row for O
+            (Cell::O, Cell::O, Cell::Empty)
+            | (Cell::O, Cell::Empty, Cell::O)
+            | (Cell::Empty, Cell::O, Cell::O) => -5,
+            //blocking O
+            (Cell::X, Cell::O, Cell::O)
+            | (Cell::O, Cell::X, Cell::O)
+            | (Cell::O, Cell::O, Cell::X) => 40,
+            //blocking X
+            (Cell::O, Cell::X, Cell::X)
+            | (Cell::X, Cell::O, Cell::X)
+            | (Cell::X, Cell::X, Cell::O) => -40,
+            _ => 0, // return 0 for everyother case.
         }
     }
-    
-    
-    return total;
 }
     
 fn my_score(board: &Board, row: usize, col: usize, sabatoge: bool) -> i32 {
@@ -243,25 +221,34 @@ fn my_score(board: &Board, row: usize, col: usize, sabatoge: bool) -> i32 {
     return score;
 }
 
-fn heuristic(board: &mut Board, sabatoge: bool) -> i32 {
-    // only need to check 9 times
-    // break the 5x5 into 9 small 3x3 boards
-    // i = 0-2 j = 0-2
-    // i = 0-2 j = 1-3
-    // i = 0-2 j = 2-4
-    // i = 1-3 j = 0-2
-    // i = 2-4 j = 0-2
-    // i = 1-3 j = 1-3
-    // i = 2-4 j = 1-3
-    // i = 1-3 j = 1-3
-    // i = 2-4 j = 2-4
-    let mut score = 0;
-
-    for row in 0..3 {
-        for col in 0..3 {
-            score += my_score(board, row, col, sabatoge);
-        }
-    }
-
-    return score; // placeholder this needs adjusting. We pass all tests but one right now
+fn heuristic(board: &mut Board, sabatoge: bool) -> i32 { 
+    // there are only so many unique 3 in a rows in a 5x5. i realized old version was checking the same rows alot. very inefficent 
+    let current_board = board.get_cells(); 
+    let mut score: i32 = 0; 
+    let size = 5; 
+    
+    for row in 0..size { 
+        for col in 0..size { 
+            if col <= 2 { let x = &current_board[row][col]; 
+                let y = &current_board[row][col + 1]; 
+                let z = &current_board[row][col + 2]; 
+                score += my_score_evaluate(x, y, z, sabatoge); 
+            } if row <= 2 { 
+                let x = &current_board[row][col]; 
+                let y = &current_board[row + 1][col]; 
+                let z = &current_board[row + 2][col]; 
+                score += my_score_evaluate(x, y, z, sabatoge); 
+            } if col <= 2 && row <= 2 { 
+                let x = &current_board[row][col]; 
+                let y = &current_board[row + 1][col + 1]; 
+                let z = &current_board[row + 2][col + 2]; 
+                score += my_score_evaluate(x, y, z, sabatoge); 
+            } if row <= 2 && col >= 2 { 
+                let x = &current_board[row][col]; 
+                let y = &current_board[row + 1][col - 1]; 
+                let z = &current_board[row + 2][col - 2]; 
+                score += my_score_evaluate(x, y, z, sabatoge); 
+            } 
+        } 
+    } return score; 
 }
