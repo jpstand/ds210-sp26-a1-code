@@ -1,5 +1,5 @@
 use std::cmp::max;
-use std::thread::current;
+use std::time::{Duration, Instant};
 
 use rand::Rng;
 use tic_tac_toe_stencil::agents::Agent;
@@ -14,14 +14,17 @@ impl Agent for SolutionAgent {
     // Should returns (<score>, <x>, <y>)
     // where <score> is your estimate for the score of the game
     // and <x>, <y> are the position of the move your solution will make.
-    fn solve(board: &mut Board, player: Player, _time_limit: u64) -> (i32, usize, usize) {
-        let max_depth = 4; // max depth for depth tracking function 4 works to pass all tests but one on my computer 
-        let current_depth = 0; // starting depth
-
+    fn solve(board: &mut Board, player: Player, time_limit: u64) -> (i32, usize, usize) {
         //todo!("maybe set a timer that uses time_limit and returns the best option we have before the timer runs out. so we can explore as many cases that the time allows. ");
         // ^ this method will allow us to search as far as possible on any computer because we can fit our depth search acording to the time taken rather than a hard coded number.
+        let start_time = Instant::now();
+        let limit = Duration::from_millis((time_limit as f64 * 0.988999999) as u64);
 
-        //implementing Aplpha/Beta Pruning - gets rid of any options that the opponiente would not allow you to win in
+        // max depth for depth tracking function 4 works to pass all tests but one on my computer 
+        let max_depth = 26; // updated to rely on the system timer
+        let current_depth = 0; // starting depth
+
+        //implementing Min MaxAplpha/Beta Pruning - gets rid of any options that the opponiente would not allow you to win in
         let alpha = i32::MIN;
         let beta = i32::MAX;
 
@@ -36,24 +39,35 @@ impl Agent for SolutionAgent {
         }
         //maybe implement a check here that checks if we are winning, if we are spend the rest of the game making the other team lose. if not, draw the game.
         let mut sabatoge = false;
-        let score = heuristic(board, sabatoge);
+        let score = heuristic(board, true);
         
         match player {
             Player::X=>{
-                if score > 0{
+                if score > 10000{ // not sure if this is the optomal #
                     sabatoge = true;
                 }
             }
             Player::O=>{
-                if score < 0{
+                if score < -10000{ // not sure if this is the optomal #
                     sabatoge = true;
                 }
             }
-
         }
-        let result = depth_tracking(board, current_depth, max_depth, &player, &_time_limit, alpha, beta, moves, sabatoge);
+        let mut best_move: (i32, usize, usize) = (0, cells[cells.len()/2].0, cells[cells.len()/2].1);
+        for depth in 1..max_depth {
+            if start_time.elapsed() >= limit { 
+                break; 
+            }
+            // We pass the start_time and limit into our search
+            if let Some(result) = depth_tracking(board, current_depth, depth,  &player.flip(), start_time,limit, alpha, beta,(best_move.1,best_move.2), sabatoge) {
+                best_move = result;
+            } else {// if there is no result break
+                break; 
+            }
+        }
+        //let result = depth_tracking(board, current_depth, max_depth, &player, &_time_limit, alpha, beta, moves, sabatoge);
         
-        return result;
+        return best_move;
     }
 }
 
@@ -62,22 +76,25 @@ fn depth_tracking(
     mut current_depth: i32,
     max_depth: i32,
     player: &Player,
-    _time_limit: &u64,
+    start_time: Instant,
+    limit:Duration,
     mut alpha: i32,
     mut beta: i32,
     mut moves_tuple: (usize, usize),
     sabatoge: bool,
-) -> (i32, usize, usize) {
-    if board.game_over() {
-        // base case
-        return (board.score(), 0, 0);
+) -> Option<(i32, usize, usize)> {
+    if start_time.elapsed() >= limit { // 
+        return None;
+    }
+    if board.game_over() { // base case to end game
+        return Some((board.score(), 0, 0));
     }
     if current_depth == max_depth {
         //if we've reached the max depth, return the board state
         let cells = board.moves();
         let mut rng = rand::thread_rng();
         let moves: (usize, usize) = cells[rng.gen_range(0..cells.len())]; // start in a random spot 
-        return (heuristic(board, sabatoge), moves.0, moves.1); // todo!(need to return the move);
+        return Some((heuristic(board, sabatoge), moves.0, moves.1)); // todo!(need to return the move);
         //return (heuristic(board, sabatoge), 0, 0);
     }
     current_depth += 1; //we update the current depth
@@ -92,8 +109,16 @@ fn depth_tracking(
     for m in moves.clone() {
         // for each move
         board.apply_move(m, *player);
-        let result = depth_tracking(board, current_depth, max_depth, &player.flip(), _time_limit, alpha, beta,moves_tuple, sabatoge); // this is the same as before execpt now we just keep passing in the depths to keep track
-        let score = result.0;
+        let mut score = 0;
+        let result = depth_tracking(board, current_depth, max_depth,  &player.flip(), start_time,limit, alpha, beta,moves_tuple, sabatoge); // this is the same as before execpt now we just keep passing in the depths to keep track
+        
+        match result {
+            Some(res)=>{
+                score = res.0;
+            },
+            None =>{
+            },
+        }
         board.undo_move(m, *player);
 
         if matches!(player, Player::X) {
@@ -117,7 +142,7 @@ fn depth_tracking(
             break;
         }
     }
-    return (best_score, moves_tuple.0, moves_tuple.1); // same as before
+    return Some((best_score, moves_tuple.0, moves_tuple.1)); // same as before
 }
 
 fn my_score_evaluate(x: &Cell, y: &Cell, z: &Cell, sabatoge: bool) -> i32 {
