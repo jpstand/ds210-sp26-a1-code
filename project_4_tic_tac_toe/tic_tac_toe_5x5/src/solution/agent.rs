@@ -17,6 +17,51 @@ impl Agent for SolutionAgent {
     fn solve(board: &mut Board, player: Player, _time_limit: u64) -> (i32, usize, usize) {
         let max_depth = 4; // max depth for depth tracking function 4 works to pass all tests but one on my computer 
         let current_depth = 0; // starting depth
+        let checking_first_row = board.get_cells();
+        let checked_first_row = checking_first_row[0].iter().all(|c| matches!(c, Cell::Wall));
+        if checked_first_row {
+           let moves = board.moves(); // available moves
+            let score = board.score();
+            
+            if board.game_over() {// base case
+                return (score,0,0);
+            }
+            
+            if moves.len() == 9{ // if no moves are made. go middle
+                return (score, 1, 1);
+            }
+
+            let mut best_score;
+            if matches!(player,Player::X){
+                best_score = -2;
+            }else {
+                best_score = 2;
+            }
+            let mut best_move = moves[0].clone();
+        
+            for m in moves.clone(){// for each move
+
+                board.apply_move(m, player);
+                let result = SolutionAgent::solve(board, player.flip(), _time_limit);
+                let score = result.0;
+                board.undo_move(m, player);
+
+                if matches!(player, Player::X) {
+                    // X wants the highest score
+                    if score > best_score {
+                        best_score = score;
+                        best_move = m;
+                    }
+                } else {
+                    // O wants the lowest score
+                    if score < best_score {
+                        best_score = score;
+                        best_move = m;
+                    }
+                }
+            }
+        return (best_score,best_move.0,best_move.1);
+        }
 
         //todo!("maybe set a timer that uses time_limit and returns the best option we have before the timer runs out. so we can explore as many cases that the time allows. ");
         // ^ this method will allow us to search as far as possible on any computer because we can fit our depth search acording to the time taken rather than a hard coded number.
