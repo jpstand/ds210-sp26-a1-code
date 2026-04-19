@@ -29,11 +29,12 @@ impl Agent for SolutionAgent {
         
         let mut rng = rand::thread_rng();
         let moves: (usize, usize) = cells[rng.gen_range(0..cells.len())]; // start in a random spot 
-        /* 
+         
         if cells.len() >= 18 {
             // first move doesnt matter as much, just go somewhere random. calculations would take too much time
             return (0, moves.0, moves.1);
-        }*/
+        }
+        //maybe implement a check here that checks if we are winning, if we are spend the rest of the game making the other team lose. if not, draw the game.
         return depth_tracking(board, current_depth, max_depth, &player, &_time_limit, alpha, beta, moves);
     }
 }
@@ -54,7 +55,11 @@ fn depth_tracking(
     }
     if current_depth == max_depth {
         //if we've reached the max depth, return the board state
-        return (heuristic(board), 0, 0); // todo!(need to return the move);
+        // let cells = board.moves();
+        // let mut rng = rand::thread_rng();
+        // let moves: (usize, usize) = cells[rng.gen_range(0..cells.len())]; // start in a random spot 
+        // return (heuristic(board), moves.0, moves.1); // todo!(need to return the move);
+        return (heuristic(board), 0, 0);
     }
     current_depth += 1; //we update the current depth
 
@@ -128,7 +133,7 @@ fn my_score_evaluate(x: &Cell, y: &Cell, z: &Cell) -> i32 {
             | (Cell::X, Cell::O, Cell::X)
             | (Cell::X, Cell::X, Cell::O) => -20,
 
-            _ => 0,
+            _ => 0, // return 0 for everyother case.
         }
     }
     return total;
