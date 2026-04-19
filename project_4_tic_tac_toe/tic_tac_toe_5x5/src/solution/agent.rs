@@ -1,4 +1,3 @@
-use std::cmp::max;
 use std::time::{Duration, Instant};
 
 use rand::Rng;
@@ -17,48 +16,9 @@ impl Agent for SolutionAgent {
     fn solve(board: &mut Board, player: Player, time_limit: u64) -> (i32, usize, usize) {
         let checking_first_row = board.get_cells();
         let checked_first_row = checking_first_row[0].iter().all(|c| matches!(c, Cell::Wall));
-        if checked_first_row {
-           let moves = board.moves(); // available moves
-            let score = board.score();
-            
-            if board.game_over() {// base case
-                return (score,0,0);
-            }
-            
-            if moves.len() == 9{ // if no moves are made. go middle
-                return (score, 1, 1);
-            }
-
-            let mut best_score;
-            if matches!(player,Player::X){
-                best_score = -2;
-            }else {
-                best_score = 2;
-            }
-            let mut best_move = moves[0].clone();
         
-            for m in moves.clone(){// for each move
-
-                board.apply_move(m, player);
-                let result = SolutionAgent::solve(board, player.flip(), time_limit);
-                let score = result.0;
-                board.undo_move(m, player);
-
-                if matches!(player, Player::X) {
-                    // X wants the highest score
-                    if score > best_score {
-                        best_score = score;
-                        best_move = m;
-                    }
-                } else {
-                    // O wants the lowest score
-                    if score < best_score {
-                        best_score = score;
-                        best_move = m;
-                    }
-                }
-            }
-        return (best_score,best_move.0,best_move.1);
+        if checked_first_row { // used to pass the "threebythree tests"
+            return threebythree_test_passer(board, player);
         }
 
         //todo!("maybe set a timer that uses time_limit and returns the best option we have before the timer runs out. so we can explore as many cases that the time allows. ");
@@ -70,7 +30,7 @@ impl Agent for SolutionAgent {
         let max_depth = 26; // updated to rely on the system timer
         let current_depth = 0; // starting depth
 
-        //implementing Min MaxAplpha/Beta Pruning - gets rid of any options that the opponiente would not allow you to win in
+        // implementing Min MaxAplpha/Beta Pruning - gets rid of any options that the opponent would not allow you to win in
         let alpha = i32::MIN;
         let beta = i32::MAX;
 
@@ -204,19 +164,19 @@ fn my_score_evaluate(x: &Cell, y: &Cell, z: &Cell, sabatoge: bool) -> i32 {
             // 2 in a row for X
             (Cell::X, Cell::X, Cell::Empty)
             | (Cell::X, Cell::Empty, Cell::X)
-            | (Cell::Empty, Cell::X, Cell::X) => 20,
+            | (Cell::Empty, Cell::X, Cell::X) => 500,
             // 2 in a row for O
             (Cell::O, Cell::O, Cell::Empty)
             | (Cell::O, Cell::Empty, Cell::O)
-            | (Cell::Empty, Cell::O, Cell::O) => -20,
+            | (Cell::Empty, Cell::O, Cell::O) => -500,
             //blocking O
             (Cell::X, Cell::O, Cell::O)
             | (Cell::O, Cell::X, Cell::O)
-            | (Cell::O, Cell::O, Cell::X) => 400,
+            | (Cell::O, Cell::O, Cell::X) => 40,
             //blocking X
             (Cell::O, Cell::X, Cell::X)
             | (Cell::X, Cell::O, Cell::X)
-            | (Cell::X, Cell::X, Cell::O) => -400,
+            | (Cell::X, Cell::X, Cell::O) => -40,
             _ => 0, // return 0 for everyother case.
         }
     } else {
@@ -227,19 +187,19 @@ fn my_score_evaluate(x: &Cell, y: &Cell, z: &Cell, sabatoge: bool) -> i32 {
             // 2 in a row for X
             (Cell::X, Cell::X, Cell::Empty)
             | (Cell::X, Cell::Empty, Cell::X)
-            | (Cell::Empty, Cell::X, Cell::X) => 5,
+            | (Cell::Empty, Cell::X, Cell::X) => 50,
             // 2 in a row for O
             (Cell::O, Cell::O, Cell::Empty)
             | (Cell::O, Cell::Empty, Cell::O)
-            | (Cell::Empty, Cell::O, Cell::O) => -5,
+            | (Cell::Empty, Cell::O, Cell::O) => -50,
             //blocking O
             (Cell::X, Cell::O, Cell::O)
             | (Cell::O, Cell::X, Cell::O)
-            | (Cell::O, Cell::O, Cell::X) => 40,
+            | (Cell::O, Cell::O, Cell::X) => 400,
             //blocking X
             (Cell::O, Cell::X, Cell::X)
             | (Cell::X, Cell::O, Cell::X)
-            | (Cell::X, Cell::X, Cell::O) => -40,
+            | (Cell::X, Cell::X, Cell::O) => -400,
             _ => 0, // return 0 for everyother case.
         }
     }
@@ -276,4 +236,48 @@ fn heuristic(board: &mut Board, sabatoge: bool) -> i32 {
             } 
         } 
     } return score; 
+}
+
+fn threebythree_test_passer(board:&mut Board, player:Player,)-> (i32, usize, usize){
+    let moves = board.moves(); // available moves
+    let score = board.score();
+    
+    if board.game_over() {// base case
+        return (score,0,0);
+    }
+    
+    if moves.len() == 9{ // if no moves are made. go middle
+        return (score, 1, 1);
+    }
+
+    let mut best_score;
+    if matches!(player,Player::X){
+        best_score = -2;
+    }else {
+        best_score = 2;
+    }
+    let mut best_move = moves[0].clone();
+
+    for m in moves.clone(){// for each move
+
+        board.apply_move(m, player);
+        let result = SolutionAgent::solve(board, player.flip(), 0);
+        let score = result.0;
+        board.undo_move(m, player);
+
+        if matches!(player, Player::X) {
+            // X wants the highest score
+            if score > best_score {
+                best_score = score;
+                best_move = m;
+            }
+        } else {
+            // O wants the lowest score
+            if score < best_score {
+                best_score = score;
+                best_move = m;
+            }
+        }
+    }
+    return (best_score,best_move.0,best_move.1);
 }
