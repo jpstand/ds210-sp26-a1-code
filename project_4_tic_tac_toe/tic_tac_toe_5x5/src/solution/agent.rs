@@ -174,52 +174,6 @@ fn my_score_evaluate(x: &Cell, y: &Cell, z: &Cell, sabatoge: bool) -> i32 {
     }
 }
     
-fn my_score(board: &Board, row: usize, col: usize, sabatoge: bool) -> i32 {
-    //TODO = change so it checks for walls
-    let current_board = board.get_cells();
-    let mut score: i32 = 0;
-
-    for i in 0..3 {
-        for j in 0..3 {
-            let check_row = i + row;
-            let check_col = j + col;
-            let size = 5;
-
-            // Count row.
-            if check_col + 2 < size {
-                let x = &current_board[check_row][check_col];
-                let y = &current_board[check_row][check_col + 1];
-                let z = &current_board[check_row][check_col + 2];
-                score += my_score_evaluate(x, y, z, sabatoge);
-            }
-            // Count col.
-            if check_row + 2 < size {
-                let x = &current_board[check_row][check_col];
-                let y = &current_board[check_row + 1][check_col];
-                let z = &current_board[check_row + 2][check_col];
-                score += my_score_evaluate(x, y, z, sabatoge);
-            }
-
-            // 1st diagonal
-            if check_row + 2 < size && check_col + 2 < size {
-                let x = &current_board[check_row][check_col];
-                let y = &current_board[check_row + 1][check_col + 1];
-                let z = &current_board[check_row + 2][check_col + 2];
-                score += my_score_evaluate(x, y, z, sabatoge);
-            }
-
-            // 2nd diagonal
-            if check_row + 2 < size && check_col >= 2 {
-                let x = &current_board[check_row][check_col];
-                let y = &current_board[check_row + 1][check_col - 1];
-                let z = &current_board[check_row + 2][check_col - 2];
-                score += my_score_evaluate(x, y, z, sabatoge);
-            }
-        }
-    }
-
-    return score;
-}
 
 fn heuristic(board: &mut Board, sabatoge: bool) -> i32 { 
     // there are only so many unique 3 in a rows in a 5x5. i realized old version was checking the same rows alot. very inefficent 
