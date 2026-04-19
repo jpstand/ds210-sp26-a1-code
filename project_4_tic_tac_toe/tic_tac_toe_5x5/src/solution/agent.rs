@@ -35,7 +35,25 @@ impl Agent for SolutionAgent {
             return (0, moves.0, moves.1);
         }
         //maybe implement a check here that checks if we are winning, if we are spend the rest of the game making the other team lose. if not, draw the game.
-        return depth_tracking(board, current_depth, max_depth, &player, &_time_limit, alpha, beta, moves);
+        let mut sabatoge = false;
+        let score = heuristic(board, sabatoge);
+        
+        match player {
+            Player::X=>{
+                if score > 0{
+                    sabatoge = true;
+                }
+            }
+            Player::O=>{
+                if score < 0{
+                    sabatoge = true;
+                }
+            }
+
+        }
+        let result = depth_tracking(board, current_depth, max_depth, &player, &_time_limit, alpha, beta, moves, sabatoge);
+        
+        return result;
     }
 }
 
@@ -48,6 +66,7 @@ fn depth_tracking(
     mut alpha: i32,
     mut beta: i32,
     mut moves_tuple: (usize, usize),
+    sabatoge: bool,
 ) -> (i32, usize, usize) {
     if board.game_over() {
         // base case
@@ -55,11 +74,11 @@ fn depth_tracking(
     }
     if current_depth == max_depth {
         //if we've reached the max depth, return the board state
-        // let cells = board.moves();
-        // let mut rng = rand::thread_rng();
-        // let moves: (usize, usize) = cells[rng.gen_range(0..cells.len())]; // start in a random spot 
-        // return (heuristic(board), moves.0, moves.1); // todo!(need to return the move);
-        return (heuristic(board), 0, 0);
+        let cells = board.moves();
+        let mut rng = rand::thread_rng();
+        let moves: (usize, usize) = cells[rng.gen_range(0..cells.len())]; // start in a random spot 
+        return (heuristic(board, sabatoge), moves.0, moves.1); // todo!(need to return the move);
+        //return (heuristic(board, sabatoge), 0, 0);
     }
     current_depth += 1; //we update the current depth
 
@@ -73,7 +92,7 @@ fn depth_tracking(
     for m in moves.clone() {
         // for each move
         board.apply_move(m, *player);
-        let result = depth_tracking(board, current_depth, max_depth, &player.flip(), _time_limit, alpha, beta,moves_tuple); // this is the same as before execpt now we just keep passing in the depths to keep track
+        let result = depth_tracking(board, current_depth, max_depth, &player.flip(), _time_limit, alpha, beta,moves_tuple, sabatoge); // this is the same as before execpt now we just keep passing in the depths to keep track
         let score = result.0;
         board.undo_move(m, *player);
 
@@ -101,10 +120,13 @@ fn depth_tracking(
     return (best_score, moves_tuple.0, moves_tuple.1); // same as before
 }
 
-fn my_score_evaluate(x: &Cell, y: &Cell, z: &Cell) -> i32 {
+fn my_score_evaluate(x: &Cell, y: &Cell, z: &Cell, sabatoge: bool) -> i32 {
+    if matches!(x, Cell::Wall) || matches!(y, Cell::Wall) || matches!(z, Cell::Wall) {
+        return 0;
+    }
     let mut total = 0;
     // we can make it smarter by adding more cases
-    if !matches!(x, Cell::Wall) && !matches!(y, Cell::Wall) && !matches!(z, Cell::Wall) {
+    if !sabatoge {
         total = match (x, y, z) {
             // Walls: Early exit
             (Cell::Wall, _, _) | (_, Cell::Wall, _) | (_, _, Cell::Wall) => 0,
@@ -116,32 +138,65 @@ fn my_score_evaluate(x: &Cell, y: &Cell, z: &Cell) -> i32 {
             // 2 in a row for X
             (Cell::X, Cell::X, Cell::Empty)
             | (Cell::X, Cell::Empty, Cell::X)
-            | (Cell::Empty, Cell::X, Cell::X) => 15,
+            | (Cell::Empty, Cell::X, Cell::X) => 20,
 
             // 2 in a row for O
             (Cell::O, Cell::O, Cell::Empty)
             | (Cell::O, Cell::Empty, Cell::O)
-            | (Cell::Empty, Cell::O, Cell::O) => 15,
+            | (Cell::Empty, Cell::O, Cell::O) => -20,
 
             //blocking O
             (Cell::X, Cell::O, Cell::O)
             | (Cell::O, Cell::X, Cell::O)
-            | (Cell::O, Cell::O, Cell::X) => 20,
+            | (Cell::O, Cell::O, Cell::X) => 10,
 
             //blocking X
             (Cell::O, Cell::X, Cell::X)
             | (Cell::X, Cell::O, Cell::X)
-            | (Cell::X, Cell::X, Cell::O) => -20,
+            | (Cell::X, Cell::X, Cell::O) => -10,
 
             _ => 0, // return 0 for everyother case.
         }
+    }else{
+        if !matches!(x, Cell::Wall) && !matches!(y, Cell::Wall) && !matches!(z, Cell::Wall) {
+            total = match (x, y, z) {
+                // Walls: Early exit
+                (Cell::Wall, _, _) | (_, Cell::Wall, _) | (_, _, Cell::Wall) => 0,
+
+                // 3 in a row
+                (Cell::X, Cell::X, Cell::X) => 90,
+                (Cell::O, Cell::O, Cell::O) => -90,
+
+                // 2 in a row for X
+                (Cell::X, Cell::X, Cell::Empty)
+                | (Cell::X, Cell::Empty, Cell::X)
+                | (Cell::Empty, Cell::X, Cell::X) => 5,
+
+                // 2 in a row for O
+                (Cell::O, Cell::O, Cell::Empty)
+                | (Cell::O, Cell::Empty, Cell::O)
+                | (Cell::Empty, Cell::O, Cell::O) => -5,
+
+                //blocking O
+                (Cell::X, Cell::O, Cell::O)
+                | (Cell::O, Cell::X, Cell::O)
+                | (Cell::O, Cell::O, Cell::X) => 40,
+
+                //blocking X
+                (Cell::O, Cell::X, Cell::X)
+                | (Cell::X, Cell::O, Cell::X)
+                | (Cell::X, Cell::X, Cell::O) => -40,
+
+                _ => 0, // return 0 for everyother case.
+            }
+        }
     }
+    
+    
     return total;
 }
     
-
-
-fn my_score(board: &Board, row: usize, col: usize) -> i32 {
+fn my_score(board: &Board, row: usize, col: usize, sabatoge: bool) -> i32 {
     //TODO = change so it checks for walls
     let current_board = board.get_cells();
     let mut score: i32 = 0;
@@ -157,14 +212,14 @@ fn my_score(board: &Board, row: usize, col: usize) -> i32 {
                 let x = &current_board[check_row][check_col];
                 let y = &current_board[check_row][check_col + 1];
                 let z = &current_board[check_row][check_col + 2];
-                score += my_score_evaluate(x, y, z);
+                score += my_score_evaluate(x, y, z, sabatoge);
             }
             // Count col.
             if check_row + 2 < size {
                 let x = &current_board[check_row][check_col];
                 let y = &current_board[check_row + 1][check_col];
                 let z = &current_board[check_row + 2][check_col];
-                score += my_score_evaluate(x, y, z);
+                score += my_score_evaluate(x, y, z, sabatoge);
             }
 
             // 1st diagonal
@@ -172,7 +227,7 @@ fn my_score(board: &Board, row: usize, col: usize) -> i32 {
                 let x = &current_board[check_row][check_col];
                 let y = &current_board[check_row + 1][check_col + 1];
                 let z = &current_board[check_row + 2][check_col + 2];
-                score += my_score_evaluate(x, y, z);
+                score += my_score_evaluate(x, y, z, sabatoge);
             }
 
             // 2nd diagonal
@@ -180,7 +235,7 @@ fn my_score(board: &Board, row: usize, col: usize) -> i32 {
                 let x = &current_board[check_row][check_col];
                 let y = &current_board[check_row + 1][check_col - 1];
                 let z = &current_board[check_row + 2][check_col - 2];
-                score += my_score_evaluate(x, y, z);
+                score += my_score_evaluate(x, y, z, sabatoge);
             }
         }
     }
@@ -188,7 +243,7 @@ fn my_score(board: &Board, row: usize, col: usize) -> i32 {
     return score;
 }
 
-fn heuristic(board: &mut Board) -> i32 {
+fn heuristic(board: &mut Board, sabatoge: bool) -> i32 {
     // only need to check 9 times
     // break the 5x5 into 9 small 3x3 boards
     // i = 0-2 j = 0-2
@@ -204,7 +259,7 @@ fn heuristic(board: &mut Board) -> i32 {
 
     for row in 0..3 {
         for col in 0..3 {
-            score += my_score(board, row, col);
+            score += my_score(board, row, col, sabatoge);
         }
     }
 
