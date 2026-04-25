@@ -27,28 +27,28 @@ impl Agent for SolutionAgent {
         let beta = i32::MAX;
          
         //maybe implement a check here that checks if we are winning, if we are spend the rest of the game making the other team lose. if not, draw the game.
-        let mut sabatoge = false;
-        let score = heuristic(board, true);
+        // let mut sabatoge = false;
+        // let score = heuristic(board, true);
         
-        match player {
-            Player::X=>{
-                if score > 10000{ // not sure if this is the optomal #
-                    sabatoge = true;
-                }
-            }
-            Player::O=>{
-                if score < -10000{ // not sure if this is the optomal #
-                    sabatoge = true;
-                }
-            }
-        }
+        // match player {
+        //     Player::X=>{
+        //         if score > 10000{ // not sure if this is the optomal #
+        //             sabatoge = true;
+        //         }
+        //     }
+        //     Player::O=>{
+        //         if score < -10000{ // not sure if this is the optomal #
+        //             sabatoge = true;
+        //         }
+        //     }
+        // }
         let mut best_move: (i32, usize, usize) = (0, 2, 2); // go center
         for depth in 4..max_depth {
             if start_time.elapsed() >= limit { 
                 break; 
             }
             // We pass the start_time and limit into our search // there was a bug here
-            if let Some(result) = evaluate(board, current_depth, depth,  &player, start_time,limit, alpha, beta,(best_move.1,best_move.2), sabatoge) {
+            if let Some(result) = evaluate(board, current_depth, depth,  &player, start_time,limit, alpha, beta,(best_move.1,best_move.2)) {
                 best_move = result;
             } else {// if there is no result break
                 break; 
@@ -64,7 +64,7 @@ fn order_moves(board: &mut Board, moves: &[(usize, usize)], player: &Player) -> 
     let mut scored: Vec<(i32, (usize, usize))> = moves.iter()
     .map(|&m| {
         board.apply_move(m, *player);
-        let s = heuristic(board, false);
+        let s = heuristic(board);
         board.undo_move(m, *player);
         (s, m)
     }).collect();
@@ -87,18 +87,17 @@ fn evaluate(
     mut alpha: i32,
     mut beta: i32,
     moves_tuple: (usize, usize),
-    sabatoge: bool,
 ) -> Option<(i32, usize, usize)> {
     if start_time.elapsed() >= limit { // 
         return None;
     }
     let ordered_moves = order_moves(board, &board.moves(), &player);    
     if board.game_over() { // base case to end game
-        return Some((heuristic(board, sabatoge), 0, 0));
+        return Some((heuristic(board), 0, 0));
     }
     if current_depth == max_depth {
         //if we've reached the max depth, return the board state
-        return Some((heuristic(board, sabatoge), ordered_moves[0].0, ordered_moves[0].1)); // todo!(need to return the move);
+        return Some((heuristic(board), ordered_moves[0].0, ordered_moves[0].1)); // todo!(need to return the move);
     }
     current_depth += 1; //we update the current depth
 
@@ -113,7 +112,7 @@ fn evaluate(
         // for each move
         board.apply_move(m, *player);
         let score ;
-        let result = evaluate(board, current_depth, max_depth, &player.flip(), start_time,limit, alpha, beta,m, sabatoge); // this is the same as before execpt now we just keep passing in the depths to keep track
+        let result = evaluate(board, current_depth, max_depth, &player.flip(), start_time,limit, alpha, beta,m); // this is the same as before execpt now we just keep passing in the depths to keep track
         
         match result {
             Some(res)=>{
@@ -150,12 +149,12 @@ fn evaluate(
     return Some((best_score, best_move.0, best_move.1)); // same as before
 }
 
-fn my_score_evaluate(x: &Cell, y: &Cell, z: &Cell, sabatoge: bool) -> i32 {
+fn my_score_evaluate(x: &Cell, y: &Cell, z: &Cell) -> i32 {
     if matches!(x, Cell::Wall) || matches!(y, Cell::Wall) || matches!(z, Cell::Wall) {
         return 0;
     }
     // we can make it smarter by adding more cases
-    if !sabatoge {
+    // if !sabatoge {
         return match (x, y, z) {
             // 3 in a row
             (Cell::X, Cell::X, Cell::X) => 1000,
@@ -178,34 +177,33 @@ fn my_score_evaluate(x: &Cell, y: &Cell, z: &Cell, sabatoge: bool) -> i32 {
             | (Cell::X, Cell::X, Cell::O) => -400,
             _ => 0, // return 0 for everyother case.
         }
-    } else {
-        return match (x, y, z) {
-            // 3 in a row
-            (Cell::X, Cell::X, Cell::X) => 1000,
-            (Cell::O, Cell::O, Cell::O) => -1000,
-            // 2 in a row for X
-            (Cell::X, Cell::X, Cell::Empty)
-            | (Cell::X, Cell::Empty, Cell::X)
-            | (Cell::Empty, Cell::X, Cell::X) => 5,
-            // 2 in a row for O
-            (Cell::O, Cell::O, Cell::Empty)
-            | (Cell::O, Cell::Empty, Cell::O)
-            | (Cell::Empty, Cell::O, Cell::O) => -5,
-            //blocking O
-            (Cell::X, Cell::O, Cell::O)
-            | (Cell::O, Cell::X, Cell::O)
-            | (Cell::O, Cell::O, Cell::X) => 40,
-            //blocking X
-            (Cell::O, Cell::X, Cell::X)
-            | (Cell::X, Cell::O, Cell::X)
-            | (Cell::X, Cell::X, Cell::O) => -40,
-            _ => 0, // return 0 for everyother case.
-        }
+    // } else {
+    //     return match (x, y, z) {
+    //         // 3 in a row
+    //         (Cell::X, Cell::X, Cell::X) => 1000,
+    //         (Cell::O, Cell::O, Cell::O) => -1000,
+    //         // 2 in a row for X
+    //         (Cell::X, Cell::X, Cell::Empty)
+    //         | (Cell::X, Cell::Empty, Cell::X)
+    //         | (Cell::Empty, Cell::X, Cell::X) => 5,
+    //         // 2 in a row for O
+    //         (Cell::O, Cell::O, Cell::Empty)
+    //         | (Cell::O, Cell::Empty, Cell::O)
+    //         | (Cell::Empty, Cell::O, Cell::O) => -5,
+    //         //blocking O
+    //         (Cell::X, Cell::O, Cell::O)
+    //         | (Cell::O, Cell::X, Cell::O)
+    //         | (Cell::O, Cell::O, Cell::X) => 40,
+    //         //blocking X
+    //         (Cell::O, Cell::X, Cell::X)
+    //         | (Cell::X, Cell::O, Cell::X)
+    //         | (Cell::X, Cell::X, Cell::O) => -40,
+    //         _ => 0, // return 0 for everyother case.
+    //     }
     }
-}
     
 
-fn heuristic(board: &mut Board, sabatoge: bool) -> i32 { 
+fn heuristic(board: &mut Board) -> i32 { 
     // there are only so many unique 3 in a rows in a 5x5. i realized old version was checking the same rows alot. very inefficent 
     let current_board = board.get_cells(); 
     let mut score: i32 = 0; 
@@ -216,22 +214,22 @@ fn heuristic(board: &mut Board, sabatoge: bool) -> i32 {
             if col <= 2 { let x = &current_board[row][col]; 
                 let y = &current_board[row][col + 1]; 
                 let z = &current_board[row][col + 2]; 
-                score += my_score_evaluate(x, y, z, sabatoge); 
+                score += my_score_evaluate(x, y, z); 
             } if row <= 2 { 
                 let x = &current_board[row][col]; 
                 let y = &current_board[row + 1][col]; 
                 let z = &current_board[row + 2][col]; 
-                score += my_score_evaluate(x, y, z, sabatoge); 
+                score += my_score_evaluate(x, y, z); 
             } if col <= 2 && row <= 2 { 
                 let x = &current_board[row][col]; 
                 let y = &current_board[row + 1][col + 1]; 
                 let z = &current_board[row + 2][col + 2]; 
-                score += my_score_evaluate(x, y, z, sabatoge); 
+                score += my_score_evaluate(x, y, z); 
             } if row <= 2 && col >= 2 { 
                 let x = &current_board[row][col]; 
                 let y = &current_board[row + 1][col - 1]; 
                 let z = &current_board[row + 2][col - 2]; 
-                score += my_score_evaluate(x, y, z, sabatoge); 
+                score += my_score_evaluate(x, y, z); 
             } 
         } 
     } 
