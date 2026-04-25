@@ -26,22 +26,6 @@ impl Agent for SolutionAgent {
         let alpha = i32::MIN;
         let beta = i32::MAX;
          
-        //maybe implement a check here that checks if we are winning, if we are spend the rest of the game making the other team lose. if not, draw the game.
-        // let mut sabatoge = false;
-        // let score = heuristic(board, true);
-        
-        // match player {
-        //     Player::X=>{
-        //         if score > 10000{ // not sure if this is the optomal #
-        //             sabatoge = true;
-        //         }
-        //     }
-        //     Player::O=>{
-        //         if score < -10000{ // not sure if this is the optomal #
-        //             sabatoge = true;
-        //         }
-        //     }
-        // }
         let mut best_move: (i32, usize, usize) = (0, 2, 2); // go center
         for depth in 4..max_depth {
             if start_time.elapsed() >= limit { 
@@ -154,7 +138,6 @@ fn my_score_evaluate(x: &Cell, y: &Cell, z: &Cell) -> i32 {
         return 0;
     }
     // we can make it smarter by adding more cases
-    // if !sabatoge {
         return match (x, y, z) {
             // 3 in a row
             (Cell::X, Cell::X, Cell::X) => 1000,
@@ -177,29 +160,6 @@ fn my_score_evaluate(x: &Cell, y: &Cell, z: &Cell) -> i32 {
             | (Cell::X, Cell::X, Cell::O) => -400,
             _ => 0, // return 0 for everyother case.
         }
-    // } else {
-    //     return match (x, y, z) {
-    //         // 3 in a row
-    //         (Cell::X, Cell::X, Cell::X) => 1000,
-    //         (Cell::O, Cell::O, Cell::O) => -1000,
-    //         // 2 in a row for X
-    //         (Cell::X, Cell::X, Cell::Empty)
-    //         | (Cell::X, Cell::Empty, Cell::X)
-    //         | (Cell::Empty, Cell::X, Cell::X) => 5,
-    //         // 2 in a row for O
-    //         (Cell::O, Cell::O, Cell::Empty)
-    //         | (Cell::O, Cell::Empty, Cell::O)
-    //         | (Cell::Empty, Cell::O, Cell::O) => -5,
-    //         //blocking O
-    //         (Cell::X, Cell::O, Cell::O)
-    //         | (Cell::O, Cell::X, Cell::O)
-    //         | (Cell::O, Cell::O, Cell::X) => 40,
-    //         //blocking X
-    //         (Cell::O, Cell::X, Cell::X)
-    //         | (Cell::X, Cell::O, Cell::X)
-    //         | (Cell::X, Cell::X, Cell::O) => -40,
-    //         _ => 0, // return 0 for everyother case.
-    //     }
     }
     
 
@@ -247,5 +207,7 @@ fn heuristic(board: &mut Board) -> i32 {
 /*
 AI use: Student 2( Ricky Cui) used Claude to identify potential improvements, Claude pointed out bugs in the code that caused issues. Student
  2 fixed the bugs Claude pointed out with the assistance of Claude. Claude also pointed how how organizing the moves before implementing alpha/
- beta pruning makes it much more efficent. Student 2 implemented the changes Claude suggested. 
+ beta pruning makes it much more efficent. Student 2 implemented the changes Claude suggested.
+
+ Student 1 removed the sabotage portion (without AI use) but used Claude to check if any other improvements could be helpful. Tried adding but nothing committed yet due to errors occurring (e.g., failing tests).  
  */
