@@ -1,5 +1,4 @@
 use std::time::{Duration, Instant};
-
 use tic_tac_toe_stencil::agents::Agent;
 use tic_tac_toe_stencil::board::{Board, Cell};
 use tic_tac_toe_stencil::player::Player;
@@ -16,6 +15,9 @@ to save time
 - added a reward for a "fork" when you can still score even if the other player blocks one
 
  */
+
+// adjusted the heuristic so that it doesn't need to allocate memory for a vector every move
+ 
 // Put your solution here.
 impl Agent for SolutionAgent {
     // Should returns (<score>, <x>, <y>)
@@ -50,6 +52,7 @@ impl Agent for SolutionAgent {
             i32::MIN,
             i32::MAX,
             &valid_windows,
+            moves.len(),
         ) {
             best_move = res; // only update if we finished the depth, partial searches get thrown out
         }
@@ -65,12 +68,13 @@ impl Agent for SolutionAgent {
         moves: &[(usize, usize)],
         player: Player,
         valid_windows: &[[(usize, usize); 3]],
+        move_count: usize,
     ) -> Vec<(usize, usize)> {
         let mut scored: Vec<(i32, (usize, usize))> = moves
             .iter()
             .map(|&m| {
                 board.apply_move(m, player);
-                let s = heuristic(board, valid_windows); // quick score for ordering 
+                let s = heuristic(board, valid_windows, move_count-1); // quick score for ordering, we do -1 for move count because we just placed
                 board.undo_move(m, player);
                 (s, m)
             })
@@ -95,6 +99,7 @@ impl Agent for SolutionAgent {
         mut alpha: i32,
         mut beta: i32,
         valid_windows: &Vec<[(usize, usize); 3]>,
+        move_count: usize,
     ) -> Option<(i32, usize, usize)> {
         if start_time.elapsed() >= limit {
             return None; // signal to the caller that this search didnt finish
@@ -103,11 +108,11 @@ impl Agent for SolutionAgent {
             return Some((board.score() * 100_000, 0, 0)); // scale up so terminal states always beat heuristic scores
         }
         if current_depth >= max_depth {
-            return Some((heuristic(board, &valid_windows), 0, 0)); // hit the depth limit, estimate from here
+            return Some((heuristic(board, &valid_windows, move_count), 0, 0)); // hit the depth limit, estimate from here
         }
 
         let moves = board.moves();
-        let ordered_moves = order_moves(board, &moves, player, &valid_windows);
+        let ordered_moves = order_moves(board, &moves, player, &valid_windows, moves.len());
         current_depth += 1; // we update the current depth
 
         let mut best_score;
@@ -134,6 +139,7 @@ impl Agent for SolutionAgent {
                 alpha,
                 beta,
                 &valid_windows,
+                moves.len() - 1, //we just applied a move
             );
             board.undo_move(m, player);
 
@@ -172,27 +178,31 @@ impl Agent for SolutionAgent {
 
     //--------
 
-    fn heuristic(board: &mut Board, valid_windows: &[[(usize, usize); 3]]) -> i32 {
+    fn heuristic(board: &mut Board, valid_windows: &[[(usize, usize); 3]], move_count: usize) -> i32 {
         let mut score = 0;
         let cells = board.get_cells();
         // use fewer empty squares as a signal that we're in endgame and should weight threats more heavily
         
-        let is_late_game = board.moves().len() <= 8;
+        let is_late_game = move_count <= 8;
 
         // tracks how many windows each empty square belongs to - high overlap means a fork opportunity
         let mut x_potential: [[i32; 5]; 5] = [[0; 5]; 5];
         let mut o_potential: [[i32; 5]; 5] = [[0; 5]; 5];
-
+        
         for window in valid_windows {
             let mut x_count = 0;
             let mut o_count = 0;
-            let mut empty_cells: Vec<(usize, usize)> = vec![];
+            let mut empty_cells: [(usize, usize); 3] = [(0, 0); 3];
+            let mut empty_count = 0;
 
             for &(r, c) in window {
                 match cells[r][c] {
                     Cell::X => x_count += 1,
                     Cell::O => o_count += 1,
-                    Cell::Empty => empty_cells.push((r, c)),
+                    Cell::Empty => {
+                        empty_cells[empty_count] = (r, c); 
+                        empty_count += 1; 
+                    },
                     _ => {}
                 }
             }
@@ -207,7 +217,7 @@ impl Agent for SolutionAgent {
                     } else {
                         500 
                     }; // worth more late game since theres less time to block
-                    for &(r, c) in &empty_cells {
+                    for &(r, c) in &empty_cells[..empty_count] {
                         x_potential[r][c] += 2;
                     }
                 }
@@ -217,19 +227,19 @@ impl Agent for SolutionAgent {
                     } else { 
                         500
                     };
-                    for &(r, c) in &empty_cells {
+                    for &(r, c) in &empty_cells[..empty_count] {
                         o_potential[r][c] += 2;
                     }
                 }
                 (1, 0) => {
                     score += 10;
-                    for &(r, c) in &empty_cells {
+                    for &(r, c) in &empty_cells[..empty_count] {
                         x_potential[r][c] += 1;
                     }
                 }
                 (0, 1) => {
                     score -= 10;
-                    for &(r, c) in &empty_cells {
+                    for &(r, c) in &empty_cells[..empty_count] {
                         o_potential[r][c] += 1;
                     }
                 }
@@ -304,4 +314,8 @@ impl Agent for SolutionAgent {
 AI use: Student 2( Ricky Cui) used Claude to identify potential improvements, Claude pointed out bugs in the code that caused issues. Student
  2 fixed the bugs Claude pointed out with the assistance of Claude. Claude also pointed how how organizing the moves before implementing alpha/
  beta pruning makes it much more efficent. Student 2 implemented the changes Claude suggested. Also used AI to brainstorm how to improve hureristic func.
+
+Student 1 removed the sabotage portion (without AI use) but used Claude to check if any other improvements could be helpful. Replaced the heap allocated vec![] in 
+the heuristic func with a fixed size stack array. This sohuld eliminate repeated heap allocations across the search tree. Also eliminated a redundant board.moves() 
+call inside heuristic by passing the move count down through evaluate instead, since board.moves() was only being called there to check is_late_game condition.
  */
