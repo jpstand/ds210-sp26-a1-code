@@ -17,6 +17,7 @@ to save time
  */
 
 // adjusted the heuristic so that it doesn't need to allocate memory for a vector every move
+// adjusted the heuristic so that we keep track of moves for late game checker instead of calling board.moves()
  
 // Put your solution here.
 impl Agent for SolutionAgent {
