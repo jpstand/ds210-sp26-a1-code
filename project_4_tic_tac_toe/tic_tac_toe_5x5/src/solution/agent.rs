@@ -32,7 +32,7 @@ impl Agent for SolutionAgent {
         // only precompute the windows once per solve call, not every node
         let valid_windows: Vec<[(usize, usize); 3]> = precompute_valid_windows(board.get_cells());
 
-        let moves: Vec<(usize, usize)> = board.moves();
+        let moves: Vec<(usize, usize)> = order_moves(board, player, &valid_windows, 20);
         if moves.is_empty() { // shouldnt happen but avoids a panic on moves[0]
             return (0, 0, 0);
         }
@@ -66,12 +66,11 @@ impl Agent for SolutionAgent {
         // sorts moves so we look at the most promising ones first, makes alpha beta pruning way more effective
         fn order_moves(
             board: &mut Board,
-            moves: &[(usize, usize)],
             player: Player,
             valid_windows: &[[(usize, usize); 3]],
             move_count: usize,
         ) -> Vec<(usize, usize)> {
-            let mut scored: Vec<(i32, (usize, usize))> = moves
+            let mut scored: Vec<(i32, (usize, usize))> = board.moves()
                 .iter()
                 .map(|&m| {
                     board.apply_move(m, player);
@@ -111,9 +110,8 @@ impl Agent for SolutionAgent {
             if current_depth >= max_depth {
                 return Some((heuristic(board, &valid_windows, move_count), 0, 0)); // hit the depth limit, estimate from here
             }
-
-            let moves = board.moves();
-            let ordered_moves = order_moves(board, &moves, player, &valid_windows, moves.len());
+            
+            let ordered_moves = order_moves(board, player, &valid_windows, move_count);
             current_depth += 1; // we update the current depth
 
             let mut best_score;
@@ -140,7 +138,7 @@ impl Agent for SolutionAgent {
                     alpha,
                     beta,
                     &valid_windows,
-                    moves.len() - 1, //we just applied a move
+                    move_count - 1, //we just applied a move
                 );
                 board.undo_move(m, player);
 
@@ -184,7 +182,7 @@ impl Agent for SolutionAgent {
             let cells: &Vec<Vec<Cell>> = board.get_cells();
             // use fewer empty squares as a signal that we're in endgame and should weight threats more heavily
             
-            let is_late_game = move_count <= 8;
+            let is_late_game = move_count <= 10;
 
             // tracks how many windows each empty square belongs to - high overlap means a fork opportunity
             let mut x_potential: [[i32; 5]; 5] = [[0; 5]; 5];
@@ -214,22 +212,22 @@ impl Agent for SolutionAgent {
                     (0, 3) => score -= 100_000,
                     (2, 0) => {
                         score += if is_late_game { 
-                            800 
+                            3000 
                         } else {
                             500 
                         }; // worth more late game since theres less time to block
                         for &(r, c) in &empty_cells[..empty_count] {
-                            x_potential[r][c] += 2;
+                            x_potential[r][c] += 3;
                         }
                     }
                     (0, 2) => {
                         score -= if is_late_game { 
-                            800 
+                            3000 
                         } else { 
-                            500
+                            1500
                         };
                         for &(r, c) in &empty_cells[..empty_count] {
-                            o_potential[r][c] += 2;
+                            o_potential[r][c] += 3;
                         }
                     }
                     (1, 0) => {
@@ -249,21 +247,25 @@ impl Agent for SolutionAgent {
             }
 
             // fork checker - if an empty square sits in 4+ windows for one player, filling it creates two threats at once
-            let fork_bonus = if is_late_game { 1500 } else { 600 };
+            let fork_bonus = if is_late_game { 2000 } else { 900 };
 
-            for r in 0..5 {
+             for r in 0..5 {
                 for c in 0..5 {
                     if matches!(cells[r][c], Cell::Empty) {
-                        if x_potential[r][c] >= 4 {
-                            score += fork_bonus; // good for X
+                        if x_potential[r][c] >= 6 { // unblockable fork
+                            score += fork_bonus * 3; // good for X
+                        }else if x_potential[r][c] >= 3{
+                            score += fork_bonus;
                         }
-                        if o_potential[r][c] >= 4 {
-                            score -= fork_bonus; // good for O
+                        if o_potential[r][c] >= 6 { 
+                            score -= fork_bonus * 3; // good for O
+                        }else if o_potential[r][c] >= 3{
+                            score -= fork_bonus;
                         }
                     }
                 }
             }
-            score
+            return score;
         }
 
         //--------
@@ -329,7 +331,7 @@ impl Agent for SolutionAgent {
                     _ => score += 0,
                 }
             }
-            score
+            return score;
         }
     }
 } 
