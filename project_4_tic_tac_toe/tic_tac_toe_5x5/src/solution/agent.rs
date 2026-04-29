@@ -5,11 +5,11 @@ use tic_tac_toe_stencil::player::Player;
 
 // Your solution solution.
 pub struct SolutionAgent {}
-/* what i changed:
-- added a precheck to only evaluate the windows that dont have any walls(aka we can score in) trying
+/* what i changed: 
+- added a precheck to only evaluate the windows that dont have any walls(aka we can score in) trying 
 to save time
 - removed sabatoge ( i think it was sabatoging us lowkey...)
-- evaluate-> the base case returns the actual score multiplied by a constant
+- evaluate-> the base case returns the actual score multiplied by a constant 
 - added a late game checker to motivate the bot to play smarter (kinda like our old sabatoge func but this time it doesnt sabatoge ourselves )
 - implementing counting instead of checking each cell (counting is faster)
 - added a reward for a "fork" when you can still score even if the other player blocks one
@@ -18,9 +18,7 @@ to save time
 
 // adjusted the heuristic so that it doesn't need to allocate memory for a vector every move
 // adjusted the heuristic so that we keep track of moves for late game checker instead of calling board.moves()
-// adjusted the heuristic again to add a tempo bonus so that threats you can finish on your turn are worth more
-// than threats the opponent gets to block first
-
+ 
 // Put your solution here.
 impl Agent for SolutionAgent {
     // Should returns (<score>, <x>, <y>)
@@ -34,20 +32,17 @@ impl Agent for SolutionAgent {
         // only precompute the windows once per solve call, not every node
         let valid_windows: Vec<[(usize, usize); 3]> = precompute_valid_windows(board.get_cells());
 
-        let moves: Vec<(usize, usize)> =
-            order_moves(board, player, &valid_windows, board.moves().len());
-        if moves.is_empty() {
-            // shouldnt happen but avoids a panic on moves[0]
+        let moves: Vec<(usize, usize)> = order_moves(board, player, &valid_windows, board.moves().len());
+        if moves.is_empty() { // shouldnt happen but avoids a panic on moves[0]
             return (0, 0, 0);
         }
 
         let mut best_move: (i32, usize, usize) = (0, moves[0].0, moves[0].1); // default to first available move
-        for max_depth in 1..21 {
-            // iterative deepening - go deeper until time runs out
+        for max_depth in 1..21 { // iterative deepening - go deeper until time runs out
             if start_time.elapsed() >= limit {
                 break; // keep whatever best_move we have so far
             }
-            // implementing Min Max Alpha/Beta Pruning
+            // implementing Min Max Alpha/Beta Pruning 
             if let Some(res) = evaluate(
                 board,
                 0,
@@ -75,12 +70,11 @@ impl Agent for SolutionAgent {
             valid_windows: &[[(usize, usize); 3]],
             move_count: usize,
         ) -> Vec<(usize, usize)> {
-            let mut scored: Vec<(i32, (usize, usize))> = board
-                .moves()
+            let mut scored: Vec<(i32, (usize, usize))> = board.moves()
                 .iter()
                 .map(|&m| {
                     board.apply_move(m, player);
-                    let s = heuristic(board, valid_windows, move_count - 1, player); // quick score for ordering, we do -1 for move count because we just placed
+                    let s = heuristic(board, valid_windows, move_count-1); // quick score for ordering, we do -1 for move count because we just placed
                     board.undo_move(m, player);
                     (s, m)
                 })
@@ -110,14 +104,13 @@ impl Agent for SolutionAgent {
             if start_time.elapsed() >= limit {
                 return None; // signal to the caller that this search didnt finish
             }
-            if move_count == 0 {
-                // base case to end game
-                return Some((fast_score(board.get_cells(), valid_windows) * 100_000, 0, 0)); // scale up so terminal states always beat heuristic scores
+            if move_count == 0 { // base case to end game
+                return Some((fast_score(board.get_cells(),valid_windows) * 100_000, 0, 0)); // scale up so terminal states always beat heuristic scores
             }
             if current_depth >= max_depth {
-                return Some((heuristic(board, &valid_windows, move_count, player), 0, 0)); // hit the depth limit, estimate from here
+                return Some((heuristic(board, &valid_windows, move_count), 0, 0)); // hit the depth limit, estimate from here
             }
-
+            
             let ordered_moves = order_moves(board, player, &valid_windows, move_count);
 
             let mut best_score;
@@ -183,27 +176,17 @@ impl Agent for SolutionAgent {
 
         //--------
 
-        fn heuristic(
-            board: &mut Board,
-            valid_windows: &[[(usize, usize); 3]],
-            move_count: usize,
-            player: Player,
-        ) -> i32 {
+        fn heuristic(board: &mut Board, valid_windows: &[[(usize, usize); 3]], move_count: usize) -> i32 {
             let mut score = 0;
             let cells: &Vec<Vec<Cell>> = board.get_cells();
             // use fewer empty squares as a signal that we're in endgame and should weight threats more heavily
-
+            
             let is_late_game = move_count <= 10;
 
             // tracks how many windows each empty square belongs to - high overlap means a fork opportunity
             let mut x_potential: [[i32; 5]; 5] = [[0; 5]; 5];
             let mut o_potential: [[i32; 5]; 5] = [[0; 5]; 5];
-
-            // tracks immediate threats - an empty cell where one player already has 2 in the window
-            // these matter more for whoever's turn it is because they can complete the threat right now
-            let mut x_immediate: [[bool; 5]; 5] = [[false; 5]; 5];
-            let mut o_immediate: [[bool; 5]; 5] = [[false; 5]; 5];
-
+            
             for window in valid_windows {
                 let mut x_count = 0;
                 let mut o_count = 0;
@@ -215,9 +198,9 @@ impl Agent for SolutionAgent {
                         Cell::X => x_count += 1,
                         Cell::O => o_count += 1,
                         Cell::Empty => {
-                            empty_cells[empty_count] = (r, c);
-                            empty_count += 1;
-                        }
+                            empty_cells[empty_count] = (r, c); 
+                            empty_count += 1; 
+                        },
                         _ => {}
                     }
                 }
@@ -227,17 +210,23 @@ impl Agent for SolutionAgent {
                     (3, 0) => score += 100_000, // already a win
                     (0, 3) => score -= 100_000,
                     (2, 0) => {
-                        score += if is_late_game { 3000 } else { 500 }; // worth more late game since theres less time to block
+                        score += if is_late_game { 
+                            3000 
+                        } else {
+                            500 
+                        }; // worth more late game since theres less time to block
                         for &(r, c) in &empty_cells[..empty_count] {
                             x_potential[r][c] += 3;
-                            x_immediate[r][c] = true; // X can complete this window in one move
                         }
                     }
                     (0, 2) => {
-                        score -= if is_late_game { 3000 } else { 1500 };
+                        score -= if is_late_game { 
+                            3000 
+                        } else { 
+                            1500
+                        };
                         for &(r, c) in &empty_cells[..empty_count] {
                             o_potential[r][c] += 3;
-                            o_immediate[r][c] = true; // O can complete this window in one move
                         }
                     }
                     (1, 0) => {
@@ -256,50 +245,20 @@ impl Agent for SolutionAgent {
                 }
             }
 
-            // tempo bonus - threats the current player can act on right now are worth more
-            // than threats they have to wait a turn for. opponent threats get a half penalty
-            // since the current player moves first and might block or ignore them
-            let tempo_bonus = if is_late_game { 800 } else { 300 };
-            for r in 0..5 {
-                for c in 0..5 {
-                    if matches!(cells[r][c], Cell::Empty) {
-                        match player {
-                            Player::X => {
-                                if x_immediate[r][c] {
-                                    score += tempo_bonus; // X moves now, can complete the threat
-                                }
-                                if o_immediate[r][c] {
-                                    score -= tempo_bonus / 2; // O has to wait, less urgent
-                                }
-                            }
-                            Player::O => {
-                                if o_immediate[r][c] {
-                                    score -= tempo_bonus; // O moves now, can complete the threat
-                                }
-                                if x_immediate[r][c] {
-                                    score += tempo_bonus / 2; // X has to wait, less urgent
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             // fork checker - if an empty square sits in 4+ windows for one player, filling it creates two threats at once
             let fork_bonus = if is_late_game { 2000 } else { 900 };
 
-            for r in 0..5 {
+             for r in 0..5 {
                 for c in 0..5 {
                     if matches!(cells[r][c], Cell::Empty) {
-                        if x_potential[r][c] >= 6 {
-                            // unblockable fork
+                        if x_potential[r][c] >= 6 { // unblockable fork
                             score += fork_bonus * 3; // good for X
-                        } else if x_potential[r][c] >= 3 {
+                        }else if x_potential[r][c] >= 3{
                             score += fork_bonus;
                         }
-                        if o_potential[r][c] >= 6 {
+                        if o_potential[r][c] >= 6 { 
                             score -= fork_bonus * 3; // good for O
-                        } else if o_potential[r][c] >= 3 {
+                        }else if o_potential[r][c] >= 3{
                             score -= fork_bonus;
                         }
                     }
@@ -348,13 +307,12 @@ impl Agent for SolutionAgent {
             }
             return valid_win_spots;
         }
-
+    
         //-----
 
-        fn fast_score(cells: &Vec<Vec<Cell>>, valid_windows: &Vec<[(usize, usize); 3]>) -> i32 {
-            // lowkey only serves one purpose but might be worth it.
+        fn fast_score(cells: &Vec<Vec<Cell>>,valid_windows: &Vec<[(usize, usize); 3]>)-> i32 { // lowkey only serves one purpose but might be worth it.
             let mut score = 0;
-
+            
             for window in valid_windows {
                 let mut x_count = 0;
                 let mut o_count = 0;
@@ -375,15 +333,16 @@ impl Agent for SolutionAgent {
             return score;
         }
     }
-}
+} 
+
+
 
 /*
 AI use: Student 2( Ricky Cui) used Claude to identify potential improvements, Claude pointed out bugs in the code that caused issues. Student
  2 fixed the bugs Claude pointed out with the assistance of Claude. Claude also pointed how how organizing the moves before implementing alpha/
  beta pruning makes it much more efficent. Student 2 implemented the changes Claude suggested. Also used AI to brainstorm how to improve hureristic func.
 
-Student 1 removed the sabotage portion (without AI use) but used Claude to check if any other improvements could be helpful. Replaced the heap allocated vec![] in
-the heuristic func with a fixed size stack array. This sohuld eliminate repeated heap allocations across the search tree. Also eliminated a redundant board.moves()
-call inside heuristic by passing the move count down through evaluate instead, since board.moves() was only being called there to check is_late_game condition. Also now adjusted the 
-heuristic so that it accounts for who the player is and weights outcomes based on who's turn it is with the help of Claude.
+Student 1 removed the sabotage portion (without AI use) but used Claude to check if any other improvements could be helpful. Replaced the heap allocated vec![] in 
+the heuristic func with a fixed size stack array. This sohuld eliminate repeated heap allocations across the search tree. Also eliminated a redundant board.moves() 
+call inside heuristic by passing the move count down through evaluate instead, since board.moves() was only being called there to check is_late_game condition.
  */

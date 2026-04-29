@@ -1,39 +1,23 @@
 use tic_tac_toe_5x5::layout::Layout5x5;
 use tic_tac_toe_5x5::solution::agent::SolutionAgent;
-use tic_tac_toe_stencil::agents::{FirstMoveAgent, RandomAgent, TestAgent};
-use tic_tac_toe_stencil::{Outcome, game_loop};
+use tic_tac_toe_stencil::agents::{RandomAgent, TestAgent, FirstMoveAgent};
+use tic_tac_toe_stencil::{game_loop, Outcome};
 
 const TIME_LIMIT: u64 = 2000;
 
 #[test]
 fn beats_first_as_x_3x3() {
     for _ in 0..3 {
-        let outcome = game_loop::<_, SolutionAgent, FirstMoveAgent>(
-            Layout5x5::ThreeByThree,
-            TIME_LIMIT,
-            true,
-        );
-        assert_eq!(
-            outcome,
-            Outcome::X,
-            "Your solution should always win against first"
-        );
+        let outcome = game_loop::<_, SolutionAgent, FirstMoveAgent>(Layout5x5::ThreeByThree, TIME_LIMIT, true);
+        assert_eq!(outcome, Outcome::X, "Your solution should always win against first");
     }
 }
 
 #[test]
 fn beats_first_as_o_3x3() {
     for _ in 0..3 {
-        let outcome = game_loop::<_, FirstMoveAgent, SolutionAgent>(
-            Layout5x5::ThreeByThree,
-            TIME_LIMIT,
-            true,
-        );
-        assert_ne!(
-            outcome,
-            Outcome::X,
-            "Your solution should never lose against first"
-        );
+        let outcome = game_loop::<_, FirstMoveAgent, SolutionAgent>(Layout5x5::ThreeByThree, TIME_LIMIT, true);
+        assert_ne!(outcome, Outcome::X, "Your solution should never lose against first");
     }
 }
 
@@ -41,39 +25,26 @@ fn beats_first_as_o_3x3() {
 fn beats_random_as_x_3x3() {
     let mut count_win = 0;
     for _ in 0..10 {
-        let outcome =
-            game_loop::<_, SolutionAgent, RandomAgent>(Layout5x5::ThreeByThree, TIME_LIMIT, true);
-        assert_ne!(
-            outcome,
-            Outcome::O,
-            "Your solution should never lose against random on 3x3"
-        );
+        let outcome = game_loop::<_, SolutionAgent, RandomAgent>(Layout5x5::ThreeByThree, TIME_LIMIT, true);
+        assert_ne!(outcome, Outcome::O, "Your solution should never lose against random on 3x3");
         match outcome {
             Outcome::X => count_win += 1,
-            _ => {}
+            _ => {},
         }
     }
     println!("Your solution won {}/10 times", count_win);
-    assert!(
-        count_win >= 5,
-        "Your solution should win more than half the times against random as X"
-    );
+    assert!(count_win >= 5, "Your solution should win more than half the times against random as X");
 }
 
 #[test]
 fn beats_random_as_o_3x3() {
     let mut count_win = 0;
     for _ in 0..50 {
-        let outcome =
-            game_loop::<_, RandomAgent, SolutionAgent>(Layout5x5::ThreeByThree, TIME_LIMIT, true);
-        assert_ne!(
-            outcome,
-            Outcome::X,
-            "Your solution should never lose against random on 3x3"
-        );
+        let outcome = game_loop::<_, RandomAgent, SolutionAgent>(Layout5x5::ThreeByThree, TIME_LIMIT, true);
+        assert_ne!(outcome, Outcome::X, "Your solution should never lose against random on 3x3");
         match outcome {
             Outcome::O => count_win += 1,
-            _ => {}
+            _ => {},
         }
     }
     println!("Your solution won {}/50 times", count_win);
@@ -83,34 +54,21 @@ fn beats_random_as_o_3x3() {
 fn beats_baseline_as_x_3x3() {
     let mut count_win = 0;
     for _ in 0..10 {
-        let outcome =
-            game_loop::<_, SolutionAgent, TestAgent>(Layout5x5::ThreeByThree, TIME_LIMIT, true);
-        assert_ne!(
-            outcome,
-            Outcome::O,
-            "Your solution should never lose against baseline on 3x3"
-        );
+        let outcome = game_loop::<_, SolutionAgent, TestAgent>(Layout5x5::ThreeByThree, TIME_LIMIT, true);
+        assert_ne!(outcome, Outcome::O, "Your solution should never lose against baseline on 3x3");
         match outcome {
             Outcome::X => count_win += 1,
-            _ => {}
+            _ => {},
         }
     }
     println!("Your solution won {}/10 times", count_win);
-    assert!(
-        count_win >= 5,
-        "Your solution should win more than half the times against random as X"
-    );
+    assert!(count_win >= 5, "Your solution should win more than half the times against random as X");
 }
 
 #[test]
 fn beats_baseline_as_o_3x3() {
     for _ in 0..10 {
-        let outcome =
-            game_loop::<_, TestAgent, SolutionAgent>(Layout5x5::ThreeByThree, TIME_LIMIT, true);
-        assert_ne!(
-            outcome,
-            Outcome::X,
-            "Your solution should never lose against baseline on 3x3"
-        );
+        let outcome = game_loop::<_, TestAgent, SolutionAgent>(Layout5x5::ThreeByThree, TIME_LIMIT, true);
+        assert_ne!(outcome, Outcome::X, "Your solution should never lose against baseline on 3x3");
     }
 }

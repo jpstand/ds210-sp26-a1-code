@@ -118,6 +118,7 @@ impl ManualAgent {
     }
 }
 
+
 // Private trait for sealing.
 mod sealed {
     pub trait SealedAgentTrait {}
@@ -127,15 +128,11 @@ mod sealed {
 
 // Public sealed trait.
 pub trait SealedAgent: sealed::SealedAgentTrait {
-    fn manual() -> bool {
-        false
-    }
+    fn manual() -> bool { false }
     fn solve(board: &mut Board, player: Player, _time_limit: u64) -> (i32, usize, usize);
 }
 impl SealedAgent for ManualAgent {
-    fn manual() -> bool {
-        true
-    }
+    fn manual() -> bool { true }
     fn solve(board: &mut Board, player: Player, _time_limit: u64) -> (i32, usize, usize) {
         ManualAgent::solve(board, player, _time_limit)
     }

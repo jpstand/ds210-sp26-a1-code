@@ -14,7 +14,7 @@ pub use Color::*;
 
 #[cfg(windows)]
 pub fn Fg(_: Color) -> &'static str {
-    ""
+  ""
 }
 
 #[cfg(not(windows))]
