@@ -91,7 +91,7 @@ impl Agent for SolutionAgent {
 
         fn evaluate(
             board: &mut Board,
-            mut current_depth: i8,
+            current_depth: i8,
             max_depth: i8,
             player: Player,
             start_time: Instant,
@@ -104,7 +104,7 @@ impl Agent for SolutionAgent {
             if start_time.elapsed() >= limit {
                 return None; // signal to the caller that this search didnt finish
             }
-            if board.game_over() { // base case to end game
+            if move_count == 0 { // base case to end game
                 return Some((fast_score(board.get_cells(),valid_windows) * 100_000, 0, 0)); // scale up so terminal states always beat heuristic scores
             }
             if current_depth >= max_depth {
@@ -112,7 +112,6 @@ impl Agent for SolutionAgent {
             }
             
             let ordered_moves = order_moves(board, player, &valid_windows, move_count);
-            current_depth += 1; // we update the current depth
 
             let mut best_score;
             if matches!(player, Player::X) {
@@ -130,7 +129,7 @@ impl Agent for SolutionAgent {
                 board.apply_move(m, player);
                 let result = evaluate(
                     board,
-                    current_depth,
+                    current_depth + 1,
                     max_depth,
                     player.flip(), // alternate players each level
                     start_time,
