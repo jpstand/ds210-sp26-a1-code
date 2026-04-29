@@ -32,7 +32,7 @@ impl Agent for SolutionAgent {
         // only precompute the windows once per solve call, not every node
         let valid_windows: Vec<[(usize, usize); 3]> = precompute_valid_windows(board.get_cells());
 
-        let moves: Vec<(usize, usize)> = order_moves(board, player, &valid_windows, 20);
+        let moves: Vec<(usize, usize)> = order_moves(board, player, &valid_windows, board.moves().len());
         if moves.is_empty() { // shouldnt happen but avoids a panic on moves[0]
             return (0, 0, 0);
         }
@@ -91,8 +91,8 @@ impl Agent for SolutionAgent {
 
         fn evaluate(
             board: &mut Board,
-            mut current_depth: i32,
-            max_depth: i32,
+            mut current_depth: i8,
+            max_depth: i8,
             player: Player,
             start_time: Instant,
             limit: Duration,
