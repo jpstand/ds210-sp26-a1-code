@@ -233,7 +233,6 @@ impl Agent for SolutionAgent {
             } else {
                 o_order_moves(board, player, &valid_windows, move_count)
             };
-            current_depth += 1; // we update the current depth
 
             let mut best_score;
             if player == Player::X {
