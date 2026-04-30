@@ -5,11 +5,11 @@ use tic_tac_toe_stencil::player::Player;
 
 // Your solution solution.
 pub struct SolutionAgent {}
-/* what i changed: 
-- added a precheck to only evaluate the windows that dont have any walls(aka we can score in) trying 
+/* what i changed:
+- added a precheck to only evaluate the windows that dont have any walls(aka we can score in) trying
 to save time
 - removed sabatoge ( i think it was sabatoging us lowkey...)
-- evaluate-> the base case returns the actual score multiplied by a constant 
+- evaluate-> the base case returns the actual score multiplied by a constant
 - added a late game checker to motivate the bot to play smarter (kinda like our old sabatoge func but this time it doesnt sabatoge ourselves )
 - implementing counting instead of checking each cell (counting is faster)
 - added a reward for a "fork" when you can still score even if the other player blocks one
@@ -18,81 +18,129 @@ to save time
 
 // adjusted the heuristic so that it doesn't need to allocate memory for a vector every move
 // adjusted the heuristic so that we keep track of moves for late game checker instead of calling board.moves()
- 
+// adjusted late game so we just search whole board
+
 // Put your solution here.
 impl Agent for SolutionAgent {
     // Should returns (<score>, <x>, <y>)
     // where <score> is your estimate for the score of the game
     // and <x>, <y> are the position of the move your solution will make.
     fn solve(board: &mut Board, player: Player, time_limit: u64) -> (i32, usize, usize) {
-        // ^ this method will allow us to search as far as possible on any computer because we can fit our depth search acording to the time taken rather than a hard coded number.
+        // This method allows us to search as far as possible on any computer because
+        // we fit our depth search according to the time taken rather than a hard-coded number.
         let start_time = Instant::now();
-        let limit = Duration::from_millis((time_limit as f64 * 0.989999999) as u64); // shave off a tiny bit so we never go over
+        let limit = Duration::from_millis((time_limit as f64 * 0.989_999_999) as u64); // shave off a tiny bit so we never go over
 
-        // only precompute the windows once per solve call, not every node
+        // Only precompute the windows once per solve call, not every node
         let valid_windows: Vec<[(usize, usize); 3]> = precompute_valid_windows(board.get_cells());
-        let mut best_move: (i32, usize, usize);  
 
-        if player == Player::X{
-            let moves: Vec<(usize, usize)> = order_moves(board, player, &valid_windows, board.moves().len());
-            if moves.is_empty() { // shouldnt happen but avoids a panic on moves[0]
+        let mut best_move: (i32, usize, usize);
+
+        if player == Player::X {
+            let moves: Vec<(usize, usize)> =
+                order_moves(board, player, &valid_windows, board.moves().len());
+
+            if moves.is_empty() {
+                // Shouldn't happen but avoids a panic on moves[0]
                 panic!("HOW DID WE GET HERE???? THE GAME SHOULD BE OVER");
             }
-            best_move= (0, moves[0].0, moves[0].1); // default to first available move
 
-            for max_depth in 1..21 { // iterative deepening - go deeper until time runs out
-                if start_time.elapsed() >= limit {
-                    break; // keep whatever best_move we have so far
-                }
-                // implementing Min Max Alpha/Beta Pruning 
-                if let Some(res) = evaluate(
-                    board,
-                    0,
-                    max_depth,
-                    player,
-                    player,
-                    start_time,
-                    limit,
-                    i32::MIN,
-                    i32::MAX,
-                    &valid_windows,
-                    moves.len(),
-                ) {
-                    best_move = res; // only update if we finished the depth, partial searches get thrown out
-                }
-            }
-        }else{ //if is player O 
-            let moves: Vec<(usize, usize)> = o_order_moves(board, player, &valid_windows, board.moves().len());
-            if moves.is_empty() { // shouldnt happen but avoids a panic on moves[0]
-                panic!("HOW DID WE GET HERE???? THE GAME SHOULD BE OVER");
-            }
             best_move = (0, moves[0].0, moves[0].1); // default to first available move
-            for max_depth in 1..21 { // iterative deepening - go deeper until time runs out
-                if start_time.elapsed() >= limit {
-                    break; // keep whatever best_move we have so far
+
+            if moves.len() <= 10 {
+                return search_till_end(board, player, &valid_windows, moves);
+            } else {
+                for max_depth in 1..21 {
+                    // Iterative deepening - go deeper until time runs out
+                    if start_time.elapsed() >= limit {
+                        break; // keep whatever best_move we have so far
+                    }
+
+                    // Implementing Min Max Alpha/Beta Pruning
+                    if let Some(res) = evaluate(
+                        board,
+                        0,
+                        max_depth,
+                        player,
+                        player,
+                        start_time,
+                        limit,
+                        i32::MIN,
+                        i32::MAX,
+                        &valid_windows,
+                        moves.len(),
+                    ) {
+                        best_move = res; // only update if we finished the depth; partial searches get thrown out
+                    }
                 }
-                // implementing Min Max Alpha/Beta Pruning 
-                if let Some(res) = evaluate(
-                    board,
-                    0,
-                    max_depth,
-                    player,
-                    player,
-                    start_time,
-                    limit,
-                    i32::MIN,
-                    i32::MAX,
-                    &valid_windows,
-                    moves.len(),
-                ) {
-                    best_move = res; // only update if we finished the depth, partial searches get thrown out
+            }
+        } else {
+            // If is player O
+            let moves: Vec<(usize, usize)> =
+                o_order_moves(board, player, &valid_windows, board.moves().len());
+
+            if moves.is_empty() {
+                // Shouldn't happen but avoids a panic on moves[0]
+                panic!("HOW DID WE GET HERE???? THE GAME SHOULD BE OVER");
+            }
+
+            best_move = (0, moves[0].0, moves[0].1); // default to first available move
+
+            if moves.len() <= 10 {
+                return search_till_end(board, player, &valid_windows, moves);
+            } else {
+                for max_depth in 1..21 {
+                    // Iterative deepening - go deeper until time runs out
+                    if start_time.elapsed() >= limit {
+                        break; // keep whatever best_move we have so far
+                    }
+
+                    // Implementing Min Max Alpha/Beta Pruning
+                    if let Some(res) = evaluate(
+                        board,
+                        0,
+                        max_depth,
+                        player,
+                        player,
+                        start_time,
+                        limit,
+                        i32::MIN,
+                        i32::MAX,
+                        &valid_windows,
+                        moves.len(),
+                    ) {
+                        best_move = res; // only update if we finished the depth; partial searches get thrown out
+                    }
                 }
             }
         }
+
         return best_move;
 
-        // code never goes past here
-        //------
+        fn search_till_end(
+            board: &mut Board,
+            player: Player,
+            valid_windows: &Vec<[(usize, usize); 3]>,
+            moves: Vec<(usize, usize)>,
+        ) -> (i32, usize, usize) {
+            let start_time = Instant::now();
+            let limit = Duration::from_secs(3); // time limit won't really matter since only so just putting 3
+            // just call evaluate and let the whole board get searched
+            evaluate(
+                board,
+                0,
+                30, // just go deeper than the board would let you
+                player,
+                player,
+                start_time,
+                limit,
+                i32::MIN,
+                i32::MAX,
+                valid_windows,
+                moves.len(),
+            )
+            .unwrap_or((0, moves[0].0, moves[0].1)) // fallback to first move but should never trigger
+        }
 
         // sorts moves so we look at the most promising ones first, makes alpha beta pruning way more effective
         fn order_moves(
@@ -101,11 +149,12 @@ impl Agent for SolutionAgent {
             valid_windows: &[[(usize, usize); 3]],
             move_count: usize,
         ) -> Vec<(usize, usize)> {
-            let mut scored: Vec<(i32, (usize, usize))> = board.moves()
+            let mut scored: Vec<(i32, (usize, usize))> = board
+                .moves()
                 .iter()
                 .map(|&m| {
                     board.apply_move(m, player);
-                    let s = heuristic(board, valid_windows, move_count-1); // quick score for ordering, we do -1 for move count because we just placed
+                    let s = heuristic(board, valid_windows, move_count - 1); // quick score for ordering, we do -1 for move count because we just placed
                     board.undo_move(m, player);
                     (s, m)
                 })
@@ -127,11 +176,12 @@ impl Agent for SolutionAgent {
             valid_windows: &[[(usize, usize); 3]],
             move_count: usize,
         ) -> Vec<(usize, usize)> {
-            let mut scored: Vec<(i32, (usize, usize))> = board.moves()
+            let mut scored: Vec<(i32, (usize, usize))> = board
+                .moves()
                 .iter()
                 .map(|&m| {
                     board.apply_move(m, player);
-                    let s = o_heuristic(board, &valid_windows, move_count-1); // quick score for ordering, we do -1 for move count because we just placed
+                    let s = o_heuristic(board, &valid_windows, move_count - 1); // quick score for ordering, we do -1 for move count because we just placed
                     board.undo_move(m, player);
                     (s, m)
                 })
@@ -163,17 +213,26 @@ impl Agent for SolutionAgent {
             if start_time.elapsed() >= limit {
                 return None; // signal to the caller that this search didnt finish
             }
-            if move_count == 0 { // base case to end game
-                return Some(((fast_score(board.get_cells(),valid_windows) * 100_000.0) as i32, 0, 0)); // scale up so terminal states always beat heuristic scores
+            if move_count == 0 {
+                // base case to end game
+                return Some((
+                    (fast_score(board.get_cells(), valid_windows) * 100_000.0) as i32,
+                    0,
+                    0,
+                )); // scale up so terminal states always beat heuristic scores
             }
             if current_depth >= max_depth {
-                if og_player == Player::O{
-                     Some((o_heuristic(board, &valid_windows, move_count), 0, 0));
+                if og_player == Player::O {
+                    return Some((o_heuristic(board, &valid_windows, move_count), 0, 0));
                 }
                 return Some((heuristic(board, &valid_windows, move_count), 0, 0)); // hit the depth limit, estimate from here
             }
-            
-            let ordered_moves = order_moves(board, player, &valid_windows, move_count);
+
+            let ordered_moves = if player == Player::X {
+                order_moves(board, player, &valid_windows, move_count)
+            } else {
+                o_order_moves(board, player, &valid_windows, move_count)
+            };
             current_depth += 1; // we update the current depth
 
             let mut best_score;
@@ -240,16 +299,26 @@ impl Agent for SolutionAgent {
 
         //--------
 
-        fn heuristic(board: &mut Board, valid_windows: &[[(usize, usize); 3]], move_count: usize) -> i32 {
+        fn heuristic(
+            board: &mut Board,
+            valid_windows: &[[(usize, usize); 3]],
+            move_count: usize,
+        ) -> i32 {
             let mut score = 0;
             let cells: &Vec<Vec<Cell>> = board.get_cells();
-            // use fewer empty squares as a signal that we're in endgame and should weight threats more heavily
-            
-            let is_late_game = move_count <= 10;
-            // tracks how many windows each empty square belongs to - high overlap means a fork opportunity
+
+            // Use fewer empty squares as a signal that we're in endgame
+            // and should weight threats more heavily.
+
+            if move_count <= 10 {
+                return (fast_score(cells, valid_windows) * 100_000.0) as i32;
+            }
+
+            // Tracks how many windows each empty square belongs to.
+            // High overlap means a fork opportunity.
             let mut x_potential: [[i32; 5]; 5] = [[0; 5]; 5];
             let mut o_potential: [[i32; 5]; 5] = [[0; 5]; 5];
-            
+
             for window in valid_windows {
                 let mut x_count = 0;
                 let mut o_count = 0;
@@ -261,33 +330,26 @@ impl Agent for SolutionAgent {
                         Cell::X => x_count += 1,
                         Cell::O => o_count += 1,
                         Cell::Empty => {
-                            empty_cells[empty_count] = (r, c); 
-                            empty_count += 1; 
-                        },
+                            empty_cells[empty_count] = (r, c);
+                            empty_count += 1;
+                        }
                         _ => {}
                     }
                 }
 
-                // score the window and mark the empty squares as contested
+                // Score the window and mark the empty squares as contested.
                 match (x_count, o_count) {
                     (3, 0) => score += 100_000, // already a win
                     (0, 3) => score -= 100_000,
                     (2, 0) => {
-                        score += if is_late_game { 
-                            3000 
-                        } else {
-                            1500 
-                        }; // worth more late game since theres less time to block
+                        // Worth more late game since there's less time to block
+                        score += 1500;
                         for &(r, c) in &empty_cells[..empty_count] {
                             x_potential[r][c] += 3;
                         }
                     }
                     (0, 2) => {
-                        score -= if is_late_game { 
-                            3000 
-                        } else { 
-                            1500
-                        };
+                        score -= 1500;
                         for &(r, c) in &empty_cells[..empty_count] {
                             o_potential[r][c] += 3;
                         }
@@ -308,43 +370,46 @@ impl Agent for SolutionAgent {
                 }
             }
 
-            // fork checker - if an empty square sits in 4+ windows for one player, filling it creates two threats at once
-            let fork_bonus = if is_late_game { 2000 } else { 900 };
+            // Fork checker: if an empty square sits in 4+ windows for one player,
+            // filling it creates two threats at once.
+            let fork_bonus = 900;
 
-             for r in 0..5 {
+            for r in 0..5 {
                 for c in 0..5 {
                     if matches!(cells[r][c], Cell::Empty) {
-                        if x_potential[r][c] >= 6 { // unblockable fork
-                            score += fork_bonus * 3; // good for X
-                        }else if x_potential[r][c] >= 3{
+                        if x_potential[r][c] >= 6 {
+                            score += fork_bonus * 3; // unblockable fork, good for X
+                        } else if x_potential[r][c] >= 3 {
                             score += fork_bonus;
                         }
-                        if o_potential[r][c] >= 6 { 
-                            score -= fork_bonus * 3; // good for O
-                        }else if o_potential[r][c] >= 3{
+                        if o_potential[r][c] >= 6 {
+                            score -= fork_bonus * 3; // unblockable fork, good for O
+                        } else if o_potential[r][c] >= 3 {
                             score -= fork_bonus;
                         }
                     }
                 }
             }
+
             return score;
         }
-
         //--------
 
-        fn o_heuristic(board: &mut Board, valid_windows: &[[(usize, usize); 3]], move_count: usize) -> i32 {
+        fn o_heuristic(
+            board: &mut Board,
+            valid_windows: &[[(usize, usize); 3]],
+            move_count: usize,
+        ) -> i32 {
             let mut score = 0;
             let cells: &Vec<Vec<Cell>> = board.get_cells();
             // use fewer empty squares as a signal that we're in endgame and should weight threats more heavily
-            
-            let is_late_game = move_count <= 10;
-            if move_count <= 10{
+            if move_count <= 10 {
                 return (o_fast_score(cells, valid_windows) * 100_000.0) as i32;
             }
             // tracks how many windows each empty square belongs to - high overlap means a fork opportunity
             let mut x_potential: [[i32; 5]; 5] = [[0; 5]; 5];
             let mut o_potential: [[i32; 5]; 5] = [[0; 5]; 5];
-            
+
             for window in valid_windows {
                 let mut x_count = 0;
                 let mut o_count = 0;
@@ -356,9 +421,9 @@ impl Agent for SolutionAgent {
                         Cell::X => x_count += 1,
                         Cell::O => o_count += 1,
                         Cell::Empty => {
-                            empty_cells[empty_count] = (r, c); 
-                            empty_count += 1; 
-                        },
+                            empty_cells[empty_count] = (r, c);
+                            empty_count += 1;
+                        }
                         _ => {}
                     }
                 }
@@ -368,21 +433,13 @@ impl Agent for SolutionAgent {
                     (3, 0) => score += 150_000, // already a win
                     (0, 3) => score -= 100_000,
                     (2, 0) => {
-                        score += if is_late_game { 
-                            4000 
-                        } else {
-                            1500 
-                        }; // worth more late game since theres less time to block
+                        score += 1500;
                         for &(r, c) in &empty_cells[..empty_count] {
                             x_potential[r][c] += 3;
                         }
                     }
                     (0, 2) => {
-                        score -= if is_late_game { 
-                            3000 
-                        } else { 
-                            1500
-                        };
+                        score -= 1500;
                         for &(r, c) in &empty_cells[..empty_count] {
                             o_potential[r][c] += 3;
                         }
@@ -418,19 +475,20 @@ impl Agent for SolutionAgent {
             }
 
             // fork checker - if an empty square sits in 4+ windows for one player, filling it creates two threats at once
-            let fork_bonus = if is_late_game { 2000 } else { 900 };
+            let fork_bonus = 900;
 
-             for r in 0..5 {
+            for r in 0..5 {
                 for c in 0..5 {
                     if matches!(cells[r][c], Cell::Empty) {
-                        if x_potential[r][c] >= 6 { // unblockable fork
+                        if x_potential[r][c] >= 6 {
+                            // unblockable fork
                             score += fork_bonus * 3; // good for X
-                        }else if x_potential[r][c] >= 3{
+                        } else if x_potential[r][c] >= 3 {
                             score += fork_bonus;
                         }
-                        if o_potential[r][c] >= 6 { 
+                        if o_potential[r][c] >= 6 {
                             score -= fork_bonus * 3; // good for O
-                        }else if o_potential[r][c] >= 3{
+                        } else if o_potential[r][c] >= 3 {
                             score -= fork_bonus;
                         }
                     }
@@ -479,12 +537,13 @@ impl Agent for SolutionAgent {
             }
             return valid_win_spots;
         }
-    
+
         //--------
 
-        fn fast_score(cells: &Vec<Vec<Cell>>,valid_windows: &[[(usize, usize); 3]])-> f32 { // lowkey only serves one purpose but might be worth it.
+        fn fast_score(cells: &Vec<Vec<Cell>>, valid_windows: &[[(usize, usize); 3]]) -> f32 {
+            // lowkey only serves one purpose but might be worth it.
             let mut score = 0.0;
-            
+
             for window in valid_windows {
                 let mut x_count = 0;
                 let mut o_count = 0;
@@ -507,9 +566,10 @@ impl Agent for SolutionAgent {
 
         //--------
 
-        fn o_fast_score(cells: &Vec<Vec<Cell>>,valid_windows: &[[(usize, usize); 3]])-> f32 { // lowkey only serves one purpose but might be worth it.
+        fn o_fast_score(cells: &Vec<Vec<Cell>>, valid_windows: &[[(usize, usize); 3]]) -> f32 {
+            // lowkey only serves one purpose but might be worth it.
             let mut score = 0.0;
-            
+
             for window in valid_windows {
                 let mut x_count = 0;
                 let mut o_count = 0;
@@ -530,16 +590,15 @@ impl Agent for SolutionAgent {
             return score;
         }
     }
-} 
-
-
+}
 
 /*
 AI use: Student 2( Ricky Cui) used Claude to identify potential improvements, Claude pointed out bugs in the code that caused issues. Student
  2 fixed the bugs Claude pointed out with the assistance of Claude. Claude also pointed how how organizing the moves before implementing alpha/
  beta pruning makes it much more efficent. Student 2 implemented the changes Claude suggested. Also used AI to brainstorm how to improve hureristic func.
 
-Student 1 removed the sabotage portion (without AI use) but used Claude to check if any other improvements could be helpful. Replaced the heap allocated vec![] in 
-the heuristic func with a fixed size stack array. This sohuld eliminate repeated heap allocations across the search tree. Also eliminated a redundant board.moves() 
-call inside heuristic by passing the move count down through evaluate instead, since board.moves() was only being called there to check is_late_game condition.
+Student 1 removed the sabotage portion (without AI use) but used Claude to check if any other improvements could be helpful. Replaced the heap allocated vec![] in
+the heuristic func with a fixed size stack array. This sohuld eliminate repeated heap allocations across the search tree. Also eliminated a redundant board.moves()
+call inside heuristic by passing the move count down through evaluate instead, since board.moves() was only being called there to check is_late_game condition. Student 1 also used AI
+to add in the changes to reomving the late_game conditions by helping set up the logic for the search till end func.
  */
