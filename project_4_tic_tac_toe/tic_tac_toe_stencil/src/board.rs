@@ -37,7 +37,9 @@ pub struct Board {
 impl Board {
     // Create a new board given a layout.
     pub fn new<L: Layout>(layout: L) -> Board {
-        Board { cells: layout.create_board() }
+        Board {
+            cells: layout.create_board(),
+        }
     }
 
     // Return all legal moves available on this board.
