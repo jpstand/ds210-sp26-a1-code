@@ -121,7 +121,7 @@ impl Agent for SolutionAgent {
     fn solve(board: &mut Board, player: Player, time_limit: u64) -> (i32, usize, usize) {
         let zobrist = Zobrist::new();
         let mut tt = TranspositionTable::new();
-        let mut hash: u64 = 0; // empty board hash is 0
+        let hash: u64 = 0; // empty board hash is 0
 
         // This method allows us to search as far as possible on any computer because
         // we fit our depth search according to the time taken rather than a hard-coded number.
