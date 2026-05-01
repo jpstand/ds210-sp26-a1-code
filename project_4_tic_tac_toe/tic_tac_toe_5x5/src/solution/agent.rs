@@ -32,7 +32,7 @@ impl Zobrist {
     // then when an X or O is placed we XOR (stands for "exclusive or" which is a bitwise operation where
     // same bits are 0 and different bits are 1) our current hash with that cell's random number from the table.
     // when we undo a move we XOR the same number again, which cancels it out and restores the previous hash.
-    // this works because XOR is its own inverse this is supposed to work because the probability 
+    // this works because XOR is its own inverse this is supposed to work because the probability
     // of two different board states producing the same u64 hash is super duper low.
     fn new() -> Self {
         let mut state: u64 = 0xF3A1_9C2B_7E04_D856; // this giving us a starting point for the keys in our hash map
@@ -145,7 +145,15 @@ impl Agent for SolutionAgent {
             best_move = (0, moves[0].0, moves[0].1); // default to first available move
 
             if moves.len() <= 10 {
-                return search_till_end(board, player, &valid_windows, moves, &zobrist, &mut tt, hash);
+                return search_till_end(
+                    board,
+                    player,
+                    &valid_windows,
+                    moves,
+                    &zobrist,
+                    &mut tt,
+                    hash,
+                );
             } else {
                 for max_depth in 1..21 {
                     // Iterative deepening - go deeper until time runs out
@@ -187,7 +195,15 @@ impl Agent for SolutionAgent {
             best_move = (0, moves[0].0, moves[0].1); // default to first available move
 
             if moves.len() <= 10 {
-                return search_till_end(board, player, &valid_windows, moves, &zobrist, &mut tt, hash);
+                return search_till_end(
+                    board,
+                    player,
+                    &valid_windows,
+                    moves,
+                    &zobrist,
+                    &mut tt,
+                    hash,
+                );
             } else {
                 for max_depth in 1..21 {
                     // Iterative deepening - go deeper until time runs out
@@ -418,7 +434,6 @@ impl Agent for SolutionAgent {
                 }
             }
 
-            
             let node_type = if best_score <= orig_alpha {
                 NodeType::UpperBound // never raised alpha score is an upper bound
             } else if best_score >= beta {
@@ -744,8 +759,8 @@ call inside heuristic by passing the move count down through evaluate instead, s
 to add in the changes to reomving the late_game conditions by helping set up the logic for the search till end func.
 
 Student 1 tried for quite some time to figure out how to add a hash map to track moves but struggled so used Claude to help with the logic. Specifically,
-Claude helped Student 1 write the code for a Zobrist hash mapping approach (recommended by Claude). This is supposed to store a score, best move, remaining depth, 
-and node type for each visited position. The node type tracks whether the stored score is exact, a lower bound, or an upper bound, which allows the table to assist 
-with alpha-beta pruning even when the score cannot be used directly. The hash key for each board state is computed incrementally using XOR ( stands for "exclusive or" 
-which is a bitwise operation where same bits are 0 and different bits are 1). 
+Claude helped Student 1 write the code for a Zobrist hash mapping approach (recommended by Claude). This is supposed to store a score, best move, remaining depth,
+and node type for each visited position. The node type tracks whether the stored score is exact, a lower bound, or an upper bound, which allows the table to assist
+with alpha-beta pruning even when the score cannot be used directly. The hash key for each board state is computed incrementally using XOR ( stands for "exclusive or"
+which is a bitwise operation where same bits are 0 and different bits are 1).
  */
