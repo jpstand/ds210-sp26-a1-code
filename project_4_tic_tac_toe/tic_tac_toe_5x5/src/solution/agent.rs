@@ -135,7 +135,7 @@ impl Agent for SolutionAgent {
         let mut best_move: (i32, usize, usize);
 
        
-        let moves: Vec<(usize, usize)> = order_moves(board, player, &valid_windows, board.moves().len());
+        let moves: Vec<(usize, usize)> = order_moves(board, player, &valid_windows);
 
         if moves.is_empty() {
             // Shouldn't happen but avoids a panic on moves[0]
@@ -219,14 +219,13 @@ impl Agent for SolutionAgent {
             board: &mut Board,
             player: Player,
             valid_windows: &[[(usize, usize); 3]],
-            move_count: usize,
         ) -> Vec<(usize, usize)> {
             let mut scored: Vec<(i32, (usize, usize))> = board
                 .moves()
                 .iter()
                 .map(|&m| {
                     board.apply_move(m, player);
-                    let s = heuristic(board, valid_windows, move_count - 1); // quick score for ordering, we do -1 for move count because we just placed
+                    let s = heuristic(board, valid_windows); // quick score for ordering, we do -1 for move count because we just placed
                     board.undo_move(m, player);
                     (s, m)
                 })
@@ -285,10 +284,10 @@ impl Agent for SolutionAgent {
                 )); // scale up so terminal states always beat heuristic scores
             }
             if current_depth >= max_depth {
-                return Some((heuristic(board, &valid_windows, move_count), 0, 0)); // hit the depth limit, estimate from here
+                return Some((heuristic(board, &valid_windows), 0, 0)); // hit the depth limit, estimate from here
             }
 
-            let ordered_moves = order_moves(board, player, valid_windows, move_count);
+            let ordered_moves = order_moves(board, player, valid_windows);
             
 
             let orig_alpha = alpha; // remember so we know the node type at the end
@@ -370,17 +369,12 @@ impl Agent for SolutionAgent {
         fn heuristic(
             board: &mut Board,
             valid_windows: &[[(usize, usize); 3]],
-            move_count: usize,
         ) -> i32 {
             let mut score = 0;
             let cells: &Vec<Vec<Cell>> = board.get_cells();
 
             // Use fewer empty squares as a signal that we're in endgame
             // and should weight threats more heavily.
-
-            if move_count <= 10 {
-                return (fast_score(cells, valid_windows) * 100_000.0) as i32;
-            }
 
             // Tracks how many windows each empty square belongs to.
             // High overlap means a fork opportunity.
@@ -440,7 +434,7 @@ impl Agent for SolutionAgent {
 
             // Fork checker: if an empty square sits in 4+ windows for one player,
             // filling it creates two threats at once.
-            let fork_bonus = 900;
+            let fork_bonus = 1800;
 
             for r in 0..5 {
                 for c in 0..5 {
