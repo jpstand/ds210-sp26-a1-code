@@ -20,7 +20,11 @@ const PRINTING_DELAY: u64 = 1000; // in ms
 
 // Invoke the solution with a timer.
 // If the solution exceeds the timer, it will be killed and the game will be forfeited.
-fn invoke_agent<A: SealedAgent>(mut board: Board, player: Player, time_limit: u64) -> Result<(f32, usize, usize), String> {
+fn invoke_agent<A: SealedAgent>(
+    mut board: Board,
+    player: Player,
+    time_limit: u64,
+) -> Result<(f32, usize, usize), String> {
     let handler = thread::spawn(move || {
         let timer = SystemTime::now();
 
@@ -58,7 +62,7 @@ fn invoke_agent<A: SealedAgent>(mut board: Board, player: Player, time_limit: u6
 pub enum Outcome {
     X,
     O,
-    Draw
+    Draw,
 }
 impl From<Player> for Outcome {
     fn from(value: Player) -> Self {
@@ -70,7 +74,11 @@ impl From<Player> for Outcome {
 }
 
 // The game's main loop function.
-pub fn game_loop<L: Layout, X: SealedAgent, O: SealedAgent>(layout: L, time_limit: u64, background: bool) -> Outcome {
+pub fn game_loop<L: Layout, X: SealedAgent, O: SealedAgent>(
+    layout: L,
+    time_limit: u64,
+    background: bool,
+) -> Outcome {
     // Create the board.
     let mut board = Board::new(layout);
     println!("Game begins");

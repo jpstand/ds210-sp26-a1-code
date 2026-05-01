@@ -4,6 +4,99 @@ use tic_tac_toe_stencil::board::{Board, Cell};
 use tic_tac_toe_stencil::player::Player;
 
 // Your solution solution.
+
+// node type tells us how to interpret a cached score
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum NodeType {
+    Exact,      // score is the true minimax value
+    LowerBound, // we hit a beta cutoff — real score is >= this
+    UpperBound, // we hit an alpha cutoff — real score is <= this
+}
+
+#[derive(Clone)]
+struct TtEntry {
+    hash: u64,
+    score: i32,
+    best_move: (usize, usize),
+    depth: i32, // remaining depth when this was stored
+    node_type: NodeType,
+}
+
+struct Zobrist {
+    table: [[[u64; 2]; 5]; 5],
+}
+
+impl Zobrist {
+    // this lets us do hashing in O(1) apparently
+    // basic idea is that we fill the table with random u64 numbers that represent possible board states
+    // then when an X or O is placed we XOR (stands for "exclusive or" which is a bitwise operation where
+    // same bits are 0 and different bits are 1) our current hash with that cell's random number from the table.
+    // when we undo a move we XOR the same number again, which cancels it out and restores the previous hash.
+    // this works because XOR is its own inverse this is supposed to work because the probability 
+    // of two different board states producing the same u64 hash is super duper low.
+    fn new() -> Self {
+        let mut state: u64 = 0xF3A1_9C2B_7E04_D856; // this giving us a starting point for the keys in our hash map
+        let mut next = move || -> u64 {
+            state ^= state << 13; // this supposedly lets us generate a "good" distribution of random numbers
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+
+        let mut table = [[[0u64; 2]; 5]; 5];
+        for row in &mut table {
+            for cell in row {
+                cell[0] = next();
+                cell[1] = next();
+            }
+        }
+        Zobrist { table }
+    }
+
+    #[inline]
+    fn piece_index(player: Player) -> usize {
+        match player {
+            Player::X => 0,
+            Player::O => 1,
+        }
+    }
+
+    #[inline]
+    fn toggle(&self, hash: u64, row: usize, col: usize, player: Player) -> u64 {
+        hash ^ self.table[row][col][Self::piece_index(player)]
+    }
+}
+
+const TT_SIZE: usize = 1 << 20; // ~1 M entries, tweak if memory is tight
+
+struct TranspositionTable {
+    entries: Vec<Option<TtEntry>>,
+}
+
+impl TranspositionTable {
+    fn new() -> Self {
+        TranspositionTable {
+            entries: vec![None; TT_SIZE],
+        }
+    }
+
+    #[inline]
+    fn index(hash: u64) -> usize {
+        (hash as usize) & (TT_SIZE - 1)
+    }
+
+    fn get(&self, hash: u64) -> Option<&TtEntry> {
+        let e = self.entries[Self::index(hash)].as_ref()?;
+        // this is to confirm if it's really our position, not a hash collision
+        if e.hash == hash { Some(e) } else { None }
+    }
+
+    fn insert(&mut self, entry: TtEntry) {
+        let idx = Self::index(entry.hash);
+        // Simple replacement strategy we just always replace
+        self.entries[idx] = Some(entry);
+    }
+}
 pub struct SolutionAgent {}
 /* what i changed:
 - added a precheck to only evaluate the windows that dont have any walls(aka we can score in) trying
@@ -26,6 +119,10 @@ impl Agent for SolutionAgent {
     // where <score> is your estimate for the score of the game
     // and <x>, <y> are the position of the move your solution will make.
     fn solve(board: &mut Board, player: Player, time_limit: u64) -> (i32, usize, usize) {
+        let zobrist = Zobrist::new();
+        let mut tt = TranspositionTable::new();
+        let mut hash: u64 = 0; // empty board hash is 0
+
         // This method allows us to search as far as possible on any computer because
         // we fit our depth search according to the time taken rather than a hard-coded number.
         let start_time = Instant::now();
@@ -48,7 +145,7 @@ impl Agent for SolutionAgent {
             best_move = (0, moves[0].0, moves[0].1); // default to first available move
 
             if moves.len() <= 10 {
-                return search_till_end(board, player, &valid_windows, moves);
+                return search_till_end(board, player, &valid_windows, moves, &zobrist, &mut tt, hash);
             } else {
                 for max_depth in 1..21 {
                     // Iterative deepening - go deeper until time runs out
@@ -69,6 +166,9 @@ impl Agent for SolutionAgent {
                         i32::MAX,
                         &valid_windows,
                         moves.len(),
+                        &zobrist,
+                        &mut tt,
+                        hash,
                     ) {
                         best_move = res; // only update if we finished the depth; partial searches get thrown out
                     }
@@ -87,7 +187,7 @@ impl Agent for SolutionAgent {
             best_move = (0, moves[0].0, moves[0].1); // default to first available move
 
             if moves.len() <= 10 {
-                return search_till_end(board, player, &valid_windows, moves);
+                return search_till_end(board, player, &valid_windows, moves, &zobrist, &mut tt, hash);
             } else {
                 for max_depth in 1..21 {
                     // Iterative deepening - go deeper until time runs out
@@ -108,6 +208,9 @@ impl Agent for SolutionAgent {
                         i32::MAX,
                         &valid_windows,
                         moves.len(),
+                        &zobrist,
+                        &mut tt,
+                        hash,
                     ) {
                         best_move = res; // only update if we finished the depth; partial searches get thrown out
                     }
@@ -122,6 +225,9 @@ impl Agent for SolutionAgent {
             player: Player,
             valid_windows: &Vec<[(usize, usize); 3]>,
             moves: Vec<(usize, usize)>,
+            zobrist: &Zobrist,
+            tt: &mut TranspositionTable,
+            hash: u64,
         ) -> (i32, usize, usize) {
             let start_time = Instant::now();
             let limit = Duration::from_secs(3); // time limit won't really matter since only so just putting 3
@@ -138,6 +244,9 @@ impl Agent for SolutionAgent {
                 i32::MAX,
                 valid_windows,
                 moves.len(),
+                zobrist,
+                tt,
+                hash,
             )
             .unwrap_or((0, moves[0].0, moves[0].1)) // fallback to first move but should never trigger
         }
@@ -199,7 +308,7 @@ impl Agent for SolutionAgent {
 
         fn evaluate(
             board: &mut Board,
-            mut current_depth: i32,
+            current_depth: i32,
             max_depth: i32,
             player: Player,
             og_player: Player,
@@ -207,9 +316,28 @@ impl Agent for SolutionAgent {
             limit: Duration,
             mut alpha: i32,
             mut beta: i32,
-            valid_windows: &Vec<[(usize, usize); 3]>,
+            valid_windows: &[[(usize, usize); 3]],
             move_count: usize,
+            zobrist: &Zobrist,
+            tt: &mut TranspositionTable,
+            hash: u64,
         ) -> Option<(i32, usize, usize)> {
+            let remaining_depth = max_depth - current_depth;
+            if let Some(entry) = tt.get(hash) {
+                if entry.depth >= remaining_depth {
+                    match entry.node_type {
+                        NodeType::Exact => {
+                            return Some((entry.score, entry.best_move.0, entry.best_move.1));
+                        }
+                        NodeType::LowerBound => alpha = alpha.max(entry.score),
+                        NodeType::UpperBound => beta = beta.min(entry.score),
+                    }
+                    if alpha >= beta {
+                        return Some((entry.score, entry.best_move.0, entry.best_move.1));
+                    }
+                }
+            }
+
             if start_time.elapsed() >= limit {
                 return None; // signal to the caller that this search didnt finish
             }
@@ -229,72 +357,85 @@ impl Agent for SolutionAgent {
             }
 
             let ordered_moves = if player == Player::X {
-                order_moves(board, player, &valid_windows, move_count)
+                order_moves(board, player, valid_windows, move_count)
             } else {
-                o_order_moves(board, player, &valid_windows, move_count)
-            };
-            current_depth += 1; // we update the current depth
-
-            let mut best_score;
-            if player == Player::X {
-                best_score = i32::MIN;
-            } else {
-                best_score = i32::MAX;
-            }
-            let mut best_move: (usize, usize) = if ordered_moves.len() > 0 {
-                ordered_moves[0]
-            } else {
-                (0, 0) // handles case where ordered_moves is empty
+                o_order_moves(board, player, valid_windows, move_count)
             };
 
-            for m in ordered_moves {
+            let orig_alpha = alpha; // remember so we know the node type at the end
+            let mut best_score = if player == Player::X {
+                i32::MIN
+            } else {
+                i32::MAX
+            };
+            let mut best_move = ordered_moves.get(0).copied().unwrap_or((0, 0));
+
+            for m in &ordered_moves {
+                let m = *m;
                 board.apply_move(m, player);
+                // XOR the piece in to get the child hash see explanation below Claude helped with this
+                let child_hash = zobrist.toggle(hash, m.0, m.1, player);
+
                 let result = evaluate(
                     board,
-                    current_depth,
+                    current_depth + 1,
                     max_depth,
-                    player.flip(), // alternate players each level
+                    player.flip(),
                     og_player,
                     start_time,
                     limit,
                     alpha,
                     beta,
-                    &valid_windows,
-                    move_count - 1, //we just applied a move
+                    valid_windows,
+                    move_count - 1,
+                    zobrist,
+                    tt,
+                    child_hash,
                 );
+                // XOR again to undo (Zobrist is its own inverse) See comment for explanation below Claude helped with this
                 board.undo_move(m, player);
 
                 match result {
-                    Some(res) => {
-                        let score = res.0;
-
+                    None => return None, // time ran out
+                    Some((score, ..)) => {
                         if player == Player::X {
-                            // X wants the highest score
                             if score > best_score {
                                 best_score = score;
                                 best_move = m;
                             }
-                            alpha = i32::max(alpha, score); // updating alpha to the max score
+                            alpha = alpha.max(score);
                         } else {
-                            // O wants the lowest score
                             if score < best_score {
                                 best_score = score;
                                 best_move = m;
                             }
-                            beta = i32::min(beta, score); // updating beta to the min score
+                            beta = beta.min(score);
                         }
-
                         if alpha >= beta {
-                            // alpha beta pruning - opponent already has a better option elsewhere so stop searching this branch
                             break;
                         }
                     }
-                    None => {
-                        return None; // time ran out mid search, bubble it up
-                    }
                 }
             }
-            return Some((best_score, best_move.0, best_move.1));
+
+            
+            let node_type = if best_score <= orig_alpha {
+                NodeType::UpperBound // never raised alpha score is an upper bound
+            } else if best_score >= beta {
+                NodeType::LowerBound // caused a beta cutoff score is a lower bound
+            } else {
+                NodeType::Exact
+            };
+
+            tt.insert(TtEntry {
+                hash,
+                score: best_score,
+                best_move,
+                depth: remaining_depth,
+                node_type,
+            });
+
+            Some((best_score, best_move.0, best_move.1))
         }
 
         //--------
@@ -601,4 +742,10 @@ Student 1 removed the sabotage portion (without AI use) but used Claude to check
 the heuristic func with a fixed size stack array. This sohuld eliminate repeated heap allocations across the search tree. Also eliminated a redundant board.moves()
 call inside heuristic by passing the move count down through evaluate instead, since board.moves() was only being called there to check is_late_game condition. Student 1 also used AI
 to add in the changes to reomving the late_game conditions by helping set up the logic for the search till end func.
+
+Student 1 tried for quite some time to figure out how to add a hash map to track moves but struggled so used Claude to help with the logic. Specifically,
+Claude helped Student 1 write the code for a Zobrist hash mapping approach (recommended by Claude). This is supposed to store a score, best move, remaining depth, 
+and node type for each visited position. The node type tracks whether the stored score is exact, a lower bound, or an upper bound, which allows the table to assist 
+with alpha-beta pruning even when the score cannot be used directly. The hash key for each board state is computed incrementally using XOR ( stands for "exclusive or" 
+which is a bitwise operation where same bits are 0 and different bits are 1). 
  */

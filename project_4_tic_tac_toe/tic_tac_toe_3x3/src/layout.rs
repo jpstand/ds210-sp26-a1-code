@@ -8,7 +8,7 @@ impl Layout for Layout3x3 {
         return vec![
             vec![Cell::Empty, Cell::Empty, Cell::Empty],
             vec![Cell::Empty, Cell::Empty, Cell::Empty],
-            vec![Cell::Empty, Cell::Empty, Cell::Empty]
+            vec![Cell::Empty, Cell::Empty, Cell::Empty],
         ];
     }
 }
